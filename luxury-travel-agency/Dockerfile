@@ -8,6 +8,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
+ENV NODE_OPTIONS=--max-old-space-size=2048
 
 # Install dependencies first for better caching
 COPY package*.json ./
