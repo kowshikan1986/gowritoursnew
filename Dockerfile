@@ -1,11 +1,10 @@
-# Node.js 20 LTS for production
-FROM node:20-alpine
+# Node.js 22 for Vite compatibility
+FROM node:22-alpine
 
 # Set working directory to the app folder
 WORKDIR /app
 
-# Set production environment
-ENV NODE_ENV=production
+# Set environment (NODE_ENV set after build for Vite compatibility)
 ENV PORT=3000
 ENV HOST=0.0.0.0
 ENV NODE_OPTIONS=--max-old-space-size=512
@@ -21,6 +20,9 @@ COPY luxury-travel-agency/ ./
 
 # Build the application
 RUN npm run build
+
+# Set production environment after build
+ENV NODE_ENV=production
 
 # Remove dev dependencies after build
 RUN npm prune --production
