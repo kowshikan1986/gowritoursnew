@@ -210,13 +210,13 @@
       "id": "1765987545868-83e4khv46",
       "name": "Other Services",
       "slug": "other-services",
-      "description": "Other services",
-      "image": "/uploads/category_other-services_49e83beb5f22.jpg",
+      "description": "<br>",
+      "image": "/uploads/1768866010608-975618922.jpg",
       "parent_id": null,
       "visible": null,
       "sort_order": null,
       "created_at": "2025-12-17T16:05:45.000Z",
-      "updated_at": "2025-12-20T22:07:15.654Z",
+      "updated_at": "2026-01-19T23:40:10.740Z",
       "highlights": ""
     },
     {
@@ -237,12 +237,12 @@
       "name": "Sri Lanka Tours",
       "slug": "sri-lanka-tours",
       "description": "Sri Lanka and India tours",
-      "image": "/uploads/1767014701950-795067320.jpeg",
+      "image": "/uploads/1768858064379-526786143.jpg",
       "parent_id": null,
       "visible": true,
       "sort_order": 7,
       "created_at": "2025-12-17T16:05:45.000Z",
-      "updated_at": "2025-12-29T13:25:02.044Z",
+      "updated_at": "2026-01-19T21:27:44.414Z",
       "highlights": ""
     },
     {
@@ -690,13 +690,13 @@
       "name": "Sri Lanka Vehicle Hire",
       "slug": "sri-lanka-vehicle-hire",
       "description": "Sri Lanka Vehicle Hire",
-      "image": "/uploads/1767002291418-617378109.jpeg",
+      "image": "/uploads/1768866119022-378808981.png",
       "parent_id": "1765987545868-83e4khv46",
       "visible": true,
       "sort_order": 0,
-      "highlights": null,
+      "highlights": "",
       "created_at": "2025-12-29T09:58:11.519Z",
-      "updated_at": "2025-12-29T09:58:11.519Z"
+      "updated_at": "2026-01-19T23:41:59.076Z"
     },
     {
       "id": "cat-1767002932787",
