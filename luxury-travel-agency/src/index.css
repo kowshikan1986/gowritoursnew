@@ -201,6 +201,28 @@ img {
   h4 { font-size: 1.25rem; }
 }
 
+/* Rich text content - global overflow fix */
+.rich-text-content,
+.detailed-itinerary-content {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+.rich-text-content img,
+.detailed-itinerary-content img {
+  max-width: 100%;
+  height: auto;
+}
+
+.rich-text-content table,
+.detailed-itinerary-content table {
+  width: 100%;
+  display: block;
+  overflow-x: auto;
+}
+
 /* Print styles */
 @media print {
   body {

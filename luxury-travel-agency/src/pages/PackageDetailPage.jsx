@@ -73,6 +73,10 @@ const HeroContent = styled.div`
   padding: 0 2rem;
   position: relative;
   z-index: 2;
+
+  @media (max-width: 640px) {
+    padding: 0 1rem;
+  }
 `;
 
 const Badge = styled.span`
@@ -84,6 +88,11 @@ const Badge = styled.span`
   font-weight: 600;
   margin-bottom: 1rem;
   display: inline-block;
+
+  @media (max-width: 480px) {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
 `;
 
 const Title = styled.h1`
@@ -96,6 +105,10 @@ const Title = styled.h1`
 
   @media (max-width: 768px) {
     font-size: 2.2rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.8rem;
   }
 `;
 
@@ -136,6 +149,11 @@ const ContentContainer = styled.div`
     grid-template-columns: 1fr;
     margin-top: 2rem;
   }
+
+  @media (max-width: 640px) {
+    padding: 0 1rem 3rem;
+    gap: 1.5rem;
+  }
 `;
 
 const MainContent = styled.div`
@@ -143,9 +161,23 @@ const MainContent = styled.div`
   border-radius: 20px;
   padding: 2.5rem;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  overflow-x: hidden;
+  word-wrap: break-word;
 
   @media (max-width: 768px) {
     padding: 1.5rem;
+    border-radius: 16px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  /* Fix images inside rich text content */
+  img {
+    max-width: 100%;
+    height: auto;
   }
 `;
 
@@ -305,25 +337,46 @@ const DayDescription = styled.p`
 
 const TabContainer = styled.div`
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
   margin-bottom: 2rem;
   border-bottom: 1px solid #e5e7eb;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (max-width: 640px) {
+    gap: 0;
+    padding-bottom: 0.5rem;
+  }
 `;
 
 const TabButton = styled.button`
   background: none;
   border: none;
-  padding: 1rem 0;
-  margin-right: 1rem;
-  font-size: 1rem;
+  padding: 1rem 0.5rem;
+  margin-right: 0.5rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: ${props => props.active ? '#6A1B82' : '#666'};
   border-bottom: 2px solid ${props => props.active ? '#6A1B82' : 'transparent'};
   cursor: pointer;
   transition: all 0.3s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 
   &:hover {
     color: #6A1B82;
+  }
+
+  @media (max-width: 640px) {
+    padding: 0.75rem 0.25rem;
+    margin-right: 0.25rem;
+    font-size: 0.85rem;
   }
 `;
 
@@ -331,11 +384,15 @@ const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
   margin-top: 1rem;
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 
   th, td {
     padding: 1rem;
     text-align: left;
     border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
   }
 
   th {
@@ -346,6 +403,13 @@ const Table = styled.table`
 
   tr:last-child td {
     border-bottom: none;
+  }
+
+  @media (max-width: 640px) {
+    th, td {
+      padding: 0.75rem 0.5rem;
+      font-size: 0.9rem;
+    }
   }
 `;
 
@@ -1134,13 +1198,14 @@ const PackageDetailPage = () => {
                 {getActiveData('detailedItinerary') && (
                   <div style={{ marginTop: '2rem', marginBottom: '2rem' }}>
                     <SectionTitle><CalendarIcon /> Detailed Day-by-Day Itinerary</SectionTitle>
-                    <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                    <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb', overflowX: 'auto' }}>
                       <div 
-                        style={{ lineHeight: '1.8', color: '#4a4a4a', fontFamily: 'inherit' }}
+                        style={{ lineHeight: '1.8', color: '#4a4a4a', fontFamily: 'inherit', wordWrap: 'break-word', overflowWrap: 'break-word' }}
                         dangerouslySetInnerHTML={{ __html: getActiveData('detailedItinerary') }}
                         className="detailed-itinerary-content"
                       />
                       <style>{`
+                        .detailed-itinerary-content { max-width: 100%; overflow-x: hidden; }
                         .detailed-itinerary-content strong { font-weight: 700; color: #1f2937; }
                         .detailed-itinerary-content b { font-weight: 700; color: #1f2937; }
                         .detailed-itinerary-content em { font-style: italic; }
@@ -1149,9 +1214,16 @@ const PackageDetailPage = () => {
                         .detailed-itinerary-content h1 { font-size: 1.5rem; font-weight: 700; margin: 1rem 0 0.5rem; color: #6A1B82; }
                         .detailed-itinerary-content h2 { font-size: 1.25rem; font-weight: 700; margin: 1rem 0 0.5rem; color: #6A1B82; }
                         .detailed-itinerary-content h3 { font-size: 1.1rem; font-weight: 700; margin: 0.75rem 0 0.4rem; color: #374151; }
-                        .detailed-itinerary-content p { margin-bottom: 0.75rem; }
+                        .detailed-itinerary-content p { margin-bottom: 0.75rem; word-wrap: break-word; }
                         .detailed-itinerary-content ul, .detailed-itinerary-content ol { margin: 0.5rem 0 0.75rem 1.5rem; }
                         .detailed-itinerary-content li { margin-bottom: 0.25rem; }
+                        .detailed-itinerary-content img { max-width: 100%; height: auto; }
+                        .detailed-itinerary-content table { width: 100%; overflow-x: auto; display: block; }
+                        @media (max-width: 640px) {
+                          .detailed-itinerary-content h1 { font-size: 1.25rem; }
+                          .detailed-itinerary-content h2 { font-size: 1.1rem; }
+                          .detailed-itinerary-content h3 { font-size: 1rem; }
+                        }
                       `}</style>
                     </div>
                   </div>
