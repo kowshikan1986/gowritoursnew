@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import RichTextEditor from '../components/common/RichTextEditor';
-import { initDatabase, getCategories, updateCategory, deleteCategory } from '../services/postgresDatabase';
+import { initDatabase, getCategories, updateCategory, deleteCategory } from '../services/jsonDatabase';
 
 const Page = styled.div`
   max-width: 900px;
@@ -144,6 +144,7 @@ const CategoryEditPage = () => {
     description: '',
     highlights: '',
     image: null,
+    contentImage: null,
   });
 
   useEffect(() => {
@@ -181,6 +182,7 @@ const CategoryEditPage = () => {
           description: found.description || '',
           highlights: found.highlights || '',
           image: null,
+          contentImage: null,
           parent_id: found.parent_id || ''
         });
         setLoading(false);
@@ -204,7 +206,9 @@ const CategoryEditPage = () => {
       slug: category.slug,
       name: form.name,
       hasImageFile: !!form.image,
-      imageFileName: form.image?.name
+      imageFileName: form.image?.name,
+      hasContentImageFile: !!form.contentImage,
+      contentImageFileName: form.contentImage?.name
     });
     
     try {
@@ -213,6 +217,7 @@ const CategoryEditPage = () => {
         description: form.description,
         highlights: form.highlights,
         imageFile: form.image,
+        contentImageFile: form.contentImage,
         parent_id: form.parent_id || null,
       });
       
@@ -344,18 +349,39 @@ const CategoryEditPage = () => {
           )}
 
           <Field>
-            <Label>Image</Label>
+            <Label>Hero Image (Banner)</Label>
             <Input
               type="file"
               accept="image/*"
               onChange={(e) => setForm({ ...form, image: e.target.files[0] })}
             />
+            <small style={{ color: '#666', display: 'block', marginTop: '4px' }}>Displayed at the top of the service page as the main banner</small>
             {category.image && (
               <div style={{ marginTop: '0.5rem' }}>
-                <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>Current image:</p>
+                <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>Current hero image:</p>
                 <img
                   src={category.image}
                   alt={category.name}
+                  style={{ width: '200px', height: 'auto', borderRadius: '8px', marginTop: '0.5rem' }}
+                />
+              </div>
+            )}
+          </Field>
+
+          <Field>
+            <Label>Content Image (Info Section)</Label>
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setForm({ ...form, contentImage: e.target.files[0] })}
+            />
+            <small style={{ color: '#666', display: 'block', marginTop: '4px' }}>Displayed next to "Experience Luxury" section</small>
+            {category.content_image && (
+              <div style={{ marginTop: '0.5rem' }}>
+                <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>Current content image:</p>
+                <img
+                  src={category.content_image}
+                  alt={`${category.name} content`}
                   style={{ width: '200px', height: 'auto', borderRadius: '8px', marginTop: '0.5rem' }}
                 />
               </div>

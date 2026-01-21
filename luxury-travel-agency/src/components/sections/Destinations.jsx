@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styled from 'styled-components';
 import { ArrowRightIcon, MapPinIcon, StarIcon } from '@heroicons/react/24/outline';
-import { getCategories } from '../../services/postgresDatabase';
+import { getCategories } from '../../services/jsonDatabase';
 
 const DestinationsContainer = styled.section`
   padding: 8rem 0;

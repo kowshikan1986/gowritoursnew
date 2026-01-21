@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { TagIcon, ClockIcon } from '@heroicons/react/24/outline';
-import { getAds } from '../../services/postgresDatabase';
+import { getAds } from '../../services/jsonDatabase';
 
 const BannerSection = styled.section`
   background: linear-gradient(135deg, #6A1B82 0%, #6A1B82 100%);

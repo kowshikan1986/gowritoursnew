@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPinIcon, ClockIcon, CurrencyPoundIcon, CheckCircleIcon, CalendarIcon } from '@heroicons/react/24/outline';
 import { fetchFrontendData, clearFrontendCache } from '../services/frontendData';
-import { onDataChange } from '../services/postgresDatabase';
+import { onDataChange } from '../services/jsonDatabase';
 import { servicesData } from '../data/servicesData';
 
 const PageContainer = styled.div`

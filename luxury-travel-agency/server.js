@@ -1,23 +1,18 @@
 import express from 'express';
 import compression from 'compression';
 import cors from 'cors';
-import pg from 'pg';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
 import fs from 'fs';
 
-const { Pool } = pg;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Database configuration - Using JSON only
-const pool = null; // PostgreSQL disabled
-
-// Test database connection
+// JSON-only database mode
 console.log('✅ Using JSON-only database mode');
 
 // Middleware
@@ -32,8 +27,14 @@ app.use(express.static(path.join(__dirname, 'dist')));
 // Serve public directory (robots.txt, .well-known, etc.)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Serve uploaded images from public/uploads
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+// Serve uploaded images from public/uploads with no-cache to ensure fresh images
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads'), {
+  setHeaders: (res) => {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+  }
+}));
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -55,23 +56,22 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
-// ==================== JSON FALLBACK ====================
-// Load JSON database (always use JSON, no PostgreSQL)
+// ==================== JSON DATABASE ====================
+// Load JSON database
 let jsonDatabase = null;
-let jsonFallback = null; // For fallback when PostgreSQL fails
-const useJsonOnly = true; // Force JSON-only mode
-const postgresAvailable = false; // Disable PostgreSQL
 
 try {
   const dbPath = path.join(__dirname, 'data', 'database.json');
   if (fs.existsSync(dbPath)) {
     jsonDatabase = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-    console.log('📦 JSON database loaded (PostgreSQL disabled)');
+    console.log('📦 JSON database loaded');
   } else {
     console.error('❌ database.json not found!');
+    jsonDatabase = { categories: [], tours: [], hero_banners: [], logos: [], ads: [] };
   }
 } catch (err) {
   console.error('❌ Could not load JSON database:', err.message);
+  jsonDatabase = { categories: [], tours: [], hero_banners: [], logos: [], ads: [] };
 }
 
 // Helper function to save JSON database
@@ -82,42 +82,6 @@ function saveJsonDatabase() {
     console.log('✅ Database saved to JSON');
   } catch (error) {
     console.error('❌ Error saving database:', error.message);
-  }
-}
-
-// Function to export database to JSON after updates
-async function syncDatabaseToJSON() {
-  if (!postgresAvailable) return; // Don't export if PostgreSQL is not available
-  
-  try {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const exportData = {
-      exportDate: new Date().toISOString(),
-      tables: {}
-    };
-
-    // Get all tables
-    const tables = ['ads', 'categories', 'hero_banners', 'logos', 'tours'];
-    
-    for (const tableName of tables) {
-      const result = await pool.query(`SELECT * FROM ${tableName}`);
-      exportData.tables[tableName] = {
-        rowCount: result.rows.length,
-        data: result.rows
-      };
-    }
-
-    // Save to JSON file
-    const filename = `database_export_${timestamp}.json`;
-    const filepath = path.join(__dirname, filename);
-    fs.writeFileSync(filepath, JSON.stringify(exportData, null, 2));
-    
-    // Update in-memory fallback
-    jsonFallback = exportData;
-    
-    console.log('✅ Database synced to JSON:', filename);
-  } catch (error) {
-    console.error('❌ Error syncing database to JSON:', error.message);
   }
 }
 
@@ -145,11 +109,10 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
 // Health check
 app.get('/api/health', async (req, res) => {
   try {
-    const result = await pool.query('SELECT NOW()');
     res.json({ 
       status: 'ok', 
-      timestamp: result.rows[0].now,
-      database: 'postgresql'
+      timestamp: new Date().toISOString(),
+      database: 'json'
     });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
@@ -162,7 +125,8 @@ app.get('/api/health', async (req, res) => {
 app.get('/api/categories', async (req, res) => {
   try {
     const categories = jsonDatabase?.categories || [];
-    res.set('Cache-Control', 'public, max-age=1');
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
     res.json(categories);
   } catch (error) {
     console.error('Error fetching categories:', error);
@@ -188,7 +152,7 @@ app.get('/api/categories/:slug', async (req, res) => {
 // Create category
 app.post('/api/categories', async (req, res) => {
   try {
-    const { id, name, slug, description, image, parent_id, visible, sort_order } = req.body;
+    const { id, name, slug, description, image, content_image, parent_id, visible, sort_order } = req.body;
     const generatedId = id || `cat-${Date.now()}`;
     
     // Auto-generate slug from name if not provided
@@ -196,17 +160,30 @@ app.post('/api/categories', async (req, res) => {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
     
-    const result = await pool.query(
-      `INSERT INTO categories (id, name, slug, description, image, parent_id, visible, sort_order, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
-       RETURNING *`,
-      [generatedId, name, finalSlug, description || '', image || '', parent_id || null, visible !== false, sort_order || 0]
-    );
+    // Create new category object
+    const newCategory = {
+      id: generatedId,
+      name,
+      slug: finalSlug,
+      description: description || '',
+      image: image || '',
+      content_image: content_image || '',
+      parent_id: parent_id || null,
+      visible: visible !== false,
+      sort_order: sort_order || 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
     
-    // Sync to JSON after creating
-    syncDatabaseToJSON();
+    // Add to JSON database
+    if (!jsonDatabase.categories) {
+      jsonDatabase.categories = [];
+    }
+    jsonDatabase.categories.push(newCategory);
+    saveJsonDatabase();
     
-    res.status(201).json(result.rows[0]);
+    console.log('✅ Category created:', newCategory.name);
+    res.status(201).json(newCategory);
   } catch (error) {
     console.error('Error creating category:', error);
     res.status(500).json({ error: error.message });
@@ -216,13 +193,17 @@ app.post('/api/categories', async (req, res) => {
 // Update category
 app.put('/api/categories/:slug', async (req, res) => {
   try {
-    const { name, description, image, parent_id, visible, sort_order, highlights } = req.body;
+    const { name, description, image, content_image, parent_id, visible, sort_order, highlights } = req.body;
     
-    // Get current category to preserve image if not provided
-    const current = await pool.query('SELECT * FROM categories WHERE slug = $1', [req.params.slug]);
-    if (current.rows.length === 0) {
+    // Find current category in JSON database
+    const categories = jsonDatabase?.categories || [];
+    const categoryIndex = categories.findIndex(cat => cat.slug === req.params.slug);
+    
+    if (categoryIndex === -1) {
       return res.status(404).json({ error: 'Category not found' });
     }
+    
+    const current = categories[categoryIndex];
     
     // Generate new slug from name if name is provided
     const newSlug = name ? name.toString().trim().toLowerCase()
@@ -230,25 +211,36 @@ app.put('/api/categories/:slug', async (req, res) => {
       .replace(/^-+|-+$/g, '') : req.params.slug;
     
     // Use new image if provided (not undefined and not empty string), otherwise keep existing
-    const imageToUse = (image !== undefined && image !== null && image !== '') ? image : current.rows[0].image;
+    const imageToUse = (image !== undefined && image !== null && image !== '') ? image : (current.image || '');
+    
+    // Use new content_image if provided, otherwise keep existing
+    const contentImageToUse = (content_image !== undefined && content_image !== null && content_image !== '') ? content_image : (current.content_image || '');
     
     // Use new highlights if provided, otherwise keep existing
-    const highlightsToUse = highlights !== undefined ? highlights : current.rows[0].highlights;
+    const highlightsToUse = highlights !== undefined ? highlights : (current.highlights || '');
     
-    console.log('📝 Updating category:', req.params.slug, '| New image:', image !== undefined ? (image ? 'YES (' + image.length + ')' : 'EMPTY STRING') : 'UNDEFINED (keeping existing)');
+    console.log('📝 Updating category:', req.params.slug, '| New image:', image !== undefined ? (image ? 'YES' : 'EMPTY') : 'KEEP', '| New content_image:', content_image !== undefined ? (content_image ? 'YES' : 'EMPTY') : 'KEEP');
     
-    const result = await pool.query(
-      `UPDATE categories 
-       SET name = $1, description = $2, image = $3, parent_id = $4, visible = $5, sort_order = $6, slug = $7, highlights = $8, updated_at = NOW()
-       WHERE slug = $9
-       RETURNING *`,
-      [name, description, imageToUse, parent_id, visible, sort_order, newSlug, highlightsToUse, req.params.slug]
-    );
+    // Update the category
+    const updatedCategory = {
+      ...current,
+      name: name || current.name,
+      slug: newSlug,
+      description: description !== undefined ? description : current.description,
+      image: imageToUse,
+      content_image: contentImageToUse,
+      parent_id: parent_id !== undefined ? parent_id : current.parent_id,
+      visible: visible !== undefined ? visible : current.visible,
+      sort_order: sort_order !== undefined ? sort_order : current.sort_order,
+      highlights: highlightsToUse,
+      updated_at: new Date().toISOString()
+    };
     
-    // Sync to JSON after updating
-    syncDatabaseToJSON();
+    jsonDatabase.categories[categoryIndex] = updatedCategory;
+    saveJsonDatabase();
     
-    res.json(result.rows[0]);
+    console.log('✅ Category updated:', updatedCategory.name);
+    res.json(updatedCategory);
   } catch (error) {
     console.error('Error updating category:', error);
     res.status(500).json({ error: error.message });
@@ -260,26 +252,30 @@ app.delete('/api/categories/:slug', async (req, res) => {
   try {
     console.log('🗑️ Delete request for:', req.params.slug);
     
-    // Try to delete by slug first, then by ID if slug fails
-    let result = await pool.query('DELETE FROM categories WHERE slug = $1 RETURNING *', [req.params.slug]);
+    const categories = jsonDatabase?.categories || [];
+    
+    // Try to find by slug first, then by ID
+    let categoryIndex = categories.findIndex(cat => cat.slug === req.params.slug);
     
     // If not found by slug, try by ID
-    if (result.rowCount === 0) {
+    if (categoryIndex === -1) {
       console.log('  ❌ Not found by slug, trying by ID...');
-      result = await pool.query('DELETE FROM categories WHERE id = $1 RETURNING *', [req.params.slug]);
+      categoryIndex = categories.findIndex(cat => cat.id === req.params.slug);
     }
     
-    if (result.rowCount === 0) {
+    if (categoryIndex === -1) {
       console.log('  ❌ Not found by ID either');
       return res.status(404).json({ error: 'Category not found' });
     }
     
-    console.log('  ✅ Deleted:', result.rows[0].name);
+    const deleted = categories[categoryIndex];
+    console.log('  ✅ Deleting:', deleted.name);
     
-    // Sync to JSON after deleting
-    syncDatabaseToJSON();
+    // Remove from array
+    jsonDatabase.categories.splice(categoryIndex, 1);
+    saveJsonDatabase();
     
-    res.json({ message: 'Category deleted successfully', deleted: result.rows[0] });
+    res.json({ message: 'Category deleted successfully', deleted });
   } catch (error) {
     console.error('Error deleting category:', error);
     res.status(500).json({ error: error.message });
@@ -289,8 +285,17 @@ app.delete('/api/categories/:slug', async (req, res) => {
 // Delete category by name
 app.delete('/api/categories/by-name/:name', async (req, res) => {
   try {
-    const result = await pool.query('DELETE FROM categories WHERE name = $1', [req.params.name]);
-    res.json({ message: 'Category deleted successfully', deleted: result.rowCount });
+    const categories = jsonDatabase?.categories || [];
+    const categoryIndex = categories.findIndex(cat => cat.name === req.params.name);
+    
+    if (categoryIndex === -1) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    
+    jsonDatabase.categories.splice(categoryIndex, 1);
+    saveJsonDatabase();
+    
+    res.json({ message: 'Category deleted successfully', deleted: 1 });
   } catch (error) {
     console.error('Error deleting category by name:', error);
     res.status(500).json({ error: error.message });
@@ -345,15 +350,31 @@ app.post('/api/tours', async (req, res) => {
     const tourSlug = slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     const id = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
     
-    const result = await pool.query(
-      `INSERT INTO tours (id, title, slug, description, price, duration, location, category_id, featured_image, is_active, tour_code, details_json, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
-       RETURNING *`,
-      [id, title, tourSlug, description, price, duration, location, category_id, featured_image, is_active, tour_code, details || '{}']
-    );
+    const newTour = {
+      id,
+      title,
+      slug: tourSlug,
+      description: description || '',
+      price: price || '',
+      duration: duration || '',
+      location: location || '',
+      category_id,
+      featured_image: featured_image || '',
+      is_active: is_active !== false,
+      tour_code: tour_code || '',
+      details_json: details || '{}',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
     
-    console.log('Tour created in DB with featured_image length:', result.rows[0].featured_image?.length || 0);
-    res.json(result.rows[0]);
+    if (!jsonDatabase.tours) {
+      jsonDatabase.tours = [];
+    }
+    jsonDatabase.tours.push(newTour);
+    saveJsonDatabase();
+    
+    console.log('Tour created in DB with featured_image length:', newTour.featured_image?.length || 0);
+    res.json(newTour);
   } catch (error) {
     console.error('Error creating tour:', error);
     res.status(500).json({ error: error.message });
@@ -366,19 +387,33 @@ app.put('/api/tours/:slug', async (req, res) => {
     const { slug } = req.params;
     const { title, description, price, duration, location, category_id, featured_image, is_active, tour_code, details } = req.body;
     
-    const result = await pool.query(
-      `UPDATE tours 
-       SET title = $1, description = $2, price = $3, duration = $4, location = $5, 
-           category_id = $6, featured_image = $7, is_active = $8, tour_code = $9, details_json = $10, updated_at = NOW()
-       WHERE slug = $11
-       RETURNING *`,
-      [title, description, price, duration, location, category_id, featured_image, is_active, tour_code, details || '{}', slug]
-    );
+    const tours = jsonDatabase?.tours || [];
+    const tourIndex = tours.findIndex(t => t.slug === slug);
     
-    if (result.rows.length === 0) {
+    if (tourIndex === -1) {
       return res.status(404).json({ error: 'Tour not found' });
     }
-    res.json(result.rows[0]);
+    
+    const current = tours[tourIndex];
+    const updatedTour = {
+      ...current,
+      title: title !== undefined ? title : current.title,
+      description: description !== undefined ? description : current.description,
+      price: price !== undefined ? price : current.price,
+      duration: duration !== undefined ? duration : current.duration,
+      location: location !== undefined ? location : current.location,
+      category_id: category_id !== undefined ? category_id : current.category_id,
+      featured_image: (featured_image !== undefined && featured_image !== null) ? featured_image : current.featured_image,
+      is_active: is_active !== undefined ? is_active : current.is_active,
+      tour_code: tour_code !== undefined ? tour_code : current.tour_code,
+      details_json: details !== undefined ? details : current.details_json,
+      updated_at: new Date().toISOString()
+    };
+    
+    jsonDatabase.tours[tourIndex] = updatedTour;
+    saveJsonDatabase();
+    
+    res.json(updatedTour);
   } catch (error) {
     console.error('Error updating tour:', error);
     res.status(500).json({ error: error.message });
@@ -389,49 +424,16 @@ app.put('/api/tours/:slug', async (req, res) => {
 app.delete('/api/tours/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
-    const result = await pool.query('DELETE FROM tours WHERE slug = $1 RETURNING *', [slug]);
+    const tours = jsonDatabase?.tours || [];
+    const tourIndex = tours.findIndex(t => t.slug === slug);
     
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Tour not found' });
-    }
-    res.json({ message: 'Tour deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting tour:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Update tour
-app.put('/api/tours/:slug', async (req, res) => {
-  try {
-    const { title, description, price, duration, location, featured_image, is_active, is_featured, category_id, tour_code, details_json } = req.body;
-    
-    const result = await pool.query(
-      `UPDATE tours 
-       SET title = $1, description = $2, price = $3, duration = $4, location = $5, featured_image = $6, is_active = $7, is_featured = $8, category_id = $9, tour_code = $10, details_json = $11, updated_at = NOW()
-       WHERE slug = $12
-       RETURNING *`,
-      [title, description, price, duration, location, featured_image, is_active, is_featured, category_id, tour_code, details_json, req.params.slug]
-    );
-    
-    if (result.rows.length === 0) {
+    if (tourIndex === -1) {
       return res.status(404).json({ error: 'Tour not found' });
     }
     
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating tour:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Delete tour
-app.delete('/api/tours/:slug', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM tours WHERE slug = $1', [req.params.slug]);
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Tour not found' });
-    }
+    jsonDatabase.tours.splice(tourIndex, 1);
+    saveJsonDatabase();
+    
     res.json({ message: 'Tour deleted successfully' });
   } catch (error) {
     console.error('Error deleting tour:', error);
@@ -498,14 +500,15 @@ app.put('/api/hero-banners/:id', async (req, res) => {
       return res.status(404).json({ error: 'Hero banner not found' });
     }
     
+    const current = banners[bannerIndex];
     const updatedBanner = {
-      ...banners[bannerIndex],
-      title: title !== undefined ? title : banners[bannerIndex].title,
-      subtitle: subtitle !== undefined ? subtitle : banners[bannerIndex].subtitle,
-      cta_text: cta_text !== undefined ? cta_text : banners[bannerIndex].cta_text,
-      cta_link: cta_link !== undefined ? cta_link : banners[bannerIndex].cta_link,
-      image: bannerImage !== undefined ? bannerImage : banners[bannerIndex].image,
-      is_active: is_active !== undefined ? is_active : banners[bannerIndex].is_active,
+      ...current,
+      title: title !== undefined ? title : current.title,
+      subtitle: subtitle !== undefined ? subtitle : current.subtitle,
+      cta_text: cta_text !== undefined ? cta_text : current.cta_text,
+      cta_link: cta_link !== undefined ? cta_link : current.cta_link,
+      image: (bannerImage !== undefined && bannerImage !== null && bannerImage !== '') ? bannerImage : current.image,
+      is_active: is_active !== undefined ? is_active : current.is_active,
       updated_at: new Date().toISOString()
     };
     
@@ -561,14 +564,23 @@ app.post('/api/logos', async (req, res) => {
     const logoName = title || name || 'Logo';
     const logoImage = image_url || image || '';
     
-    const result = await pool.query(
-      `INSERT INTO logos (id, name, image, link, is_active, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-       RETURNING *`,
-      [generatedId, logoName, logoImage, link || '', is_active !== false]
-    );
+    const newLogo = {
+      id: generatedId,
+      name: logoName,
+      image: logoImage,
+      link: link || '',
+      is_active: is_active !== false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
     
-    res.status(201).json(result.rows[0]);
+    if (!jsonDatabase.logos) {
+      jsonDatabase.logos = [];
+    }
+    jsonDatabase.logos.push(newLogo);
+    saveJsonDatabase();
+    
+    res.status(201).json(newLogo);
   } catch (error) {
     console.error('Error creating logo:', error);
     res.status(500).json({ error: error.message });
@@ -582,18 +594,27 @@ app.put('/api/logos/:id', async (req, res) => {
     const logoName = title || name;
     const logoImage = image_url || image;
     
-    const result = await pool.query(
-      `UPDATE logos 
-       SET name = $1, image = $2, link = $3, is_active = $4, updated_at = NOW()
-       WHERE id = $5
-       RETURNING *`,
-      [logoName, logoImage, link, is_active, req.params.id]
-    );
+    const logos = jsonDatabase?.logos || [];
+    const logoIndex = logos.findIndex(l => l.id === req.params.id);
     
-    if (result.rows.length === 0) {
+    if (logoIndex === -1) {
       return res.status(404).json({ error: 'Logo not found' });
     }
-    res.json(result.rows[0]);
+    
+    const current = logos[logoIndex];
+    const updatedLogo = {
+      ...current,
+      name: logoName !== undefined ? logoName : current.name,
+      image: (logoImage !== undefined && logoImage !== null && logoImage !== '') ? logoImage : current.image,
+      link: link !== undefined ? link : current.link,
+      is_active: is_active !== undefined ? is_active : current.is_active,
+      updated_at: new Date().toISOString()
+    };
+    
+    jsonDatabase.logos[logoIndex] = updatedLogo;
+    saveJsonDatabase();
+    
+    res.json(updatedLogo);
   } catch (error) {
     console.error('Error updating logo:', error);
     res.status(500).json({ error: error.message });
@@ -603,11 +624,16 @@ app.put('/api/logos/:id', async (req, res) => {
 // Delete logo
 app.delete('/api/logos/:id', async (req, res) => {
   try {
-    const result = await pool.query('DELETE FROM logos WHERE id = $1 RETURNING *', [req.params.id]);
+    const logos = jsonDatabase?.logos || [];
+    const logoIndex = logos.findIndex(l => l.id === req.params.id);
     
-    if (result.rows.length === 0) {
+    if (logoIndex === -1) {
       return res.status(404).json({ error: 'Logo not found' });
     }
+    
+    jsonDatabase.logos.splice(logoIndex, 1);
+    saveJsonDatabase();
+    
     res.json({ message: 'Logo deleted successfully' });
   } catch (error) {
     console.error('Error deleting logo:', error);
@@ -633,14 +659,25 @@ app.post('/api/ads', async (req, res) => {
     const { id, title, description, image_url, link_url, is_active, priority } = req.body;
     const generatedId = id || `ad-${Date.now()}`;
     
-    const result = await pool.query(
-      `INSERT INTO ads (id, title, description, image_url, link_url, is_active, priority, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-       RETURNING *`,
-      [generatedId, title, description || '', image_url, link_url || '', is_active !== false, priority || 10]
-    );
+    const newAd = {
+      id: generatedId,
+      title: title || '',
+      description: description || '',
+      image_url: image_url || '',
+      link_url: link_url || '',
+      is_active: is_active !== false,
+      priority: priority || 10,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
     
-    res.status(201).json(result.rows[0]);
+    if (!jsonDatabase.ads) {
+      jsonDatabase.ads = [];
+    }
+    jsonDatabase.ads.push(newAd);
+    saveJsonDatabase();
+    
+    res.status(201).json(newAd);
   } catch (error) {
     console.error('Error creating ad:', error);
     res.status(500).json({ error: error.message });
@@ -652,19 +689,29 @@ app.put('/api/ads/:id', async (req, res) => {
   try {
     const { title, description, image_url, link_url, is_active, priority } = req.body;
     
-    const result = await pool.query(
-      `UPDATE ads 
-       SET title = $1, description = $2, image_url = $3, link_url = $4, 
-           is_active = $5, priority = $6, updated_at = NOW()
-       WHERE id = $7
-       RETURNING *`,
-      [title, description, image_url, link_url, is_active, priority, req.params.id]
-    );
+    const ads = jsonDatabase?.ads || [];
+    const adIndex = ads.findIndex(a => a.id === req.params.id);
     
-    if (result.rows.length === 0) {
+    if (adIndex === -1) {
       return res.status(404).json({ error: 'Ad not found' });
     }
-    res.json(result.rows[0]);
+    
+    const current = ads[adIndex];
+    const updatedAd = {
+      ...current,
+      title: title !== undefined ? title : current.title,
+      description: description !== undefined ? description : current.description,
+      image_url: (image_url !== undefined && image_url !== null && image_url !== '') ? image_url : current.image_url,
+      link_url: link_url !== undefined ? link_url : current.link_url,
+      is_active: is_active !== undefined ? is_active : current.is_active,
+      priority: priority !== undefined ? priority : current.priority,
+      updated_at: new Date().toISOString()
+    };
+    
+    jsonDatabase.ads[adIndex] = updatedAd;
+    saveJsonDatabase();
+    
+    res.json(updatedAd);
   } catch (error) {
     console.error('Error updating ad:', error);
     res.status(500).json({ error: error.message });
@@ -674,11 +721,16 @@ app.put('/api/ads/:id', async (req, res) => {
 // Delete ad
 app.delete('/api/ads/:id', async (req, res) => {
   try {
-    const result = await pool.query('DELETE FROM ads WHERE id = $1 RETURNING *', [req.params.id]);
+    const ads = jsonDatabase?.ads || [];
+    const adIndex = ads.findIndex(a => a.id === req.params.id);
     
-    if (result.rows.length === 0) {
+    if (adIndex === -1) {
       return res.status(404).json({ error: 'Ad not found' });
     }
+    
+    jsonDatabase.ads.splice(adIndex, 1);
+    saveJsonDatabase();
+    
     res.json({ message: 'Ad deleted successfully' });
   } catch (error) {
     console.error('Error deleting ad:', error);
@@ -695,12 +747,11 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📁 Serving static files from: ${path.join(__dirname, 'dist')}`);
-  console.log(`🗄️  Database: PostgreSQL (gowritour)`);
+  console.log(`🗄️  Database: JSON (data/database.json)`);
 });
 
 // Graceful shutdown
-process.on('SIGTERM', async () => {
+process.on('SIGTERM', () => {
   console.log('SIGTERM signal received: closing HTTP server');
-  await pool.end();
   process.exit(0);
 });

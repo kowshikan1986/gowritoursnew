@@ -9,6 +9,31 @@ const API_BASE = '/api';
 export const normalize = (str = '') =>
   str.toString().trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
+// ==================== DATA CHANGE NOTIFICATION ====================
+const dataChangeListeners = [];
+
+// Subscribe to data changes
+export const onDataChange = (callback) => {
+  dataChangeListeners.push(callback);
+  // Return unsubscribe function
+  return () => {
+    const index = dataChangeListeners.indexOf(callback);
+    if (index > -1) {
+      dataChangeListeners.splice(index, 1);
+    }
+  };
+};
+
+// Notify all listeners of data change
+const notifyDataChange = (type) => {
+  console.log('📢 JSON Database: Notifying data change:', type);
+  // Dynamically import frontendData to avoid circular dependency
+  import('./frontendData').then(({ clearFrontendCache }) => {
+    clearFrontendCache();
+  }).catch(() => {});
+  dataChangeListeners.forEach(callback => callback(type));
+};
+
 // ==================== CATEGORIES ====================
 export const getCategories = async () => {
   const response = await fetch(`${API_BASE}/categories`);
@@ -21,7 +46,7 @@ export const getCategoryBySlug = async (slug) => {
 };
 
 export const createCategory = async (data) => {
-  // Upload image to local folder if present
+  // Upload hero image to local folder if present
   let imagePath = '';
   if (data.imageFile) {
     const formData = new FormData();
@@ -36,10 +61,26 @@ export const createCategory = async (data) => {
     imagePath = uploadData.path;
   }
   
+  // Upload content image to local folder if present
+  let contentImagePath = '';
+  if (data.contentImageFile) {
+    const formData = new FormData();
+    formData.append('image', data.contentImageFile);
+    
+    const uploadResponse = await fetch(`${API_BASE}/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    
+    const uploadData = await uploadResponse.json();
+    contentImagePath = uploadData.path;
+  }
+  
   const payload = {
     name: data.name,
     description: data.description,
     image: imagePath,
+    content_image: contentImagePath,
     highlights: data.highlights,
     parent_id: data.parent_id,
     visible: data.visible,
@@ -52,11 +93,13 @@ export const createCategory = async (data) => {
     body: JSON.stringify(payload)
   });
   
-  return response.json();
+  const result = await response.json();
+  notifyDataChange('categories');
+  return result;
 };
 
 export const updateCategory = async (slug, data) => {
-  // Upload image to local folder if new file present
+  // Upload hero image to local folder if new file present
   let imagePath = undefined;
   if (data.imageFile) {
     const formData = new FormData();
@@ -69,6 +112,21 @@ export const updateCategory = async (slug, data) => {
     
     const uploadData = await uploadResponse.json();
     imagePath = uploadData.path;
+  }
+  
+  // Upload content image to local folder if new file present
+  let contentImagePath = undefined;
+  if (data.contentImageFile) {
+    const formData = new FormData();
+    formData.append('image', data.contentImageFile);
+    
+    const uploadResponse = await fetch(`${API_BASE}/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    
+    const uploadData = await uploadResponse.json();
+    contentImagePath = uploadData.path;
   }
   
   const payload = {
@@ -85,21 +143,30 @@ export const updateCategory = async (slug, data) => {
     payload.image = imagePath;
   }
   
+  // Only include content_image in payload if it's being updated
+  if (contentImagePath !== undefined) {
+    payload.content_image = contentImagePath;
+  }
+  
   const response = await fetch(`${API_BASE}/categories/${slug}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
   
-  return response.json();
+  const result = await response.json();
+  notifyDataChange('categories');
+  return result;
 };
 
 export const deleteCategory = async (slug) => {
   await fetch(`${API_BASE}/categories/${slug}`, { method: 'DELETE' });
+  notifyDataChange('categories');
 };
 
 export const deleteCategoryByName = async (name) => {
   await fetch(`${API_BASE}/categories/by-name/${name}`, { method: 'DELETE' });
+  notifyDataChange('categories');
 };
 
 // ==================== TOURS ====================
@@ -144,7 +211,9 @@ export const createTour = async (data) => {
     body: JSON.stringify(payload)
   });
   
-  return response.json();
+  const result = await response.json();
+  notifyDataChange('tours');
+  return result;
 };
 
 export const updateTour = async (slug, data) => {
@@ -165,10 +234,16 @@ export const updateTour = async (slug, data) => {
   
   const payload = {
     ...data,
-    featured_image: featuredImagePath,
     details: JSON.stringify(data.details || {}),
     category_id: data.category_id || data.category
   };
+  
+  // Only include featured_image if a new image was uploaded
+  if (featuredImagePath) {
+    payload.featured_image = featuredImagePath;
+  } else {
+    delete payload.featured_image;
+  }
   
   delete payload.featured_imageFile;
   
@@ -178,11 +253,14 @@ export const updateTour = async (slug, data) => {
     body: JSON.stringify(payload)
   });
   
-  return response.json();
+  const result = await response.json();
+  notifyDataChange('tours');
+  return result;
 };
 
 export const deleteTour = async (slug) => {
   await fetch(`${API_BASE}/tours/${slug}`, { method: 'DELETE' });
+  notifyDataChange('tours');
 };
 
 // ==================== HERO BANNERS ====================

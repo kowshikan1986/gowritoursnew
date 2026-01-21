@@ -265,12 +265,14 @@ const AdminDashboard = () => {
     name: '',
     description: '',
     image: null,
+    contentImage: null,
   });
   const [editCategoryId, setEditCategoryId] = useState(null);
   const [categoryEditForm, setCategoryEditForm] = useState({
     name: '',
     description: '',
     image: null,
+    contentImage: null,
   });
 
   const [bannerForm, setBannerForm] = useState({
@@ -482,6 +484,7 @@ const AdminDashboard = () => {
       setError('Title is required for a tour.');
       return;
     }
+    
     setError('');
     setLoading(true);
     try {
@@ -691,6 +694,7 @@ const AdminDashboard = () => {
 
   const handleUpdateTour = async () => {
     if (!editTourSlug) return;
+    
     setError('');
     setLoading(true);
     try {
@@ -728,9 +732,10 @@ const AdminDashboard = () => {
         name: categoryForm.name,
         description: categoryForm.description,
         imageFile: categoryForm.image,
+        contentImageFile: categoryForm.contentImage,
       });
       console.log('Category saved to SQL database:', result);
-      setCategoryForm({ name: '', description: '', image: null });
+      setCategoryForm({ name: '', description: '', image: null, contentImage: null });
       await fetchData('categories');
       setError(''); // Clear any previous errors
     } catch (err) {
@@ -781,7 +786,9 @@ const AdminDashboard = () => {
       slug: cat.slug,
       name: categoryEditForm.name,
       hasImageFile: !!categoryEditForm.image,
-      imageFileName: categoryEditForm.image?.name
+      imageFileName: categoryEditForm.image?.name,
+      hasContentImageFile: !!categoryEditForm.contentImage,
+      contentImageFileName: categoryEditForm.contentImage?.name
     });
     
     setError('');
@@ -791,9 +798,10 @@ const AdminDashboard = () => {
         name: categoryEditForm.name,
         description: categoryEditForm.description || '',
         imageFile: categoryEditForm.image,
+        contentImageFile: categoryEditForm.contentImage,
       });
       setEditCategoryId(null);
-      setCategoryEditForm({ name: '', description: '', image: null });
+      setCategoryEditForm({ name: '', description: '', image: null, contentImage: null });
       fetchData('categories');
     } catch (err) {
       setError(err.message || 'Unable to update category');
@@ -1964,7 +1972,7 @@ const AdminDashboard = () => {
                 />
               </Field>
               <Field>
-                <Label>Image</Label>
+                <Label>Hero Image (Banner)</Label>
                 <Input
                   type="file"
                   accept="image/*"
@@ -1972,6 +1980,18 @@ const AdminDashboard = () => {
                     setCategoryForm({ ...categoryForm, image: e.target.files[0] })
                   }
                 />
+                <small style={{ color: '#666', display: 'block', marginTop: '4px' }}>Displayed at the top of the service page</small>
+              </Field>
+              <Field>
+                <Label>Content Image (Info Section)</Label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    setCategoryForm({ ...categoryForm, contentImage: e.target.files[0] })
+                  }
+                />
+                <small style={{ color: '#666', display: 'block', marginTop: '4px' }}>Displayed next to "Experience Luxury" section</small>
               </Field>
             </Flex>
             <Button onClick={handleCreateCategory}>Save Category</Button>

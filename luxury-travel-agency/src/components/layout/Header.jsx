@@ -5,7 +5,7 @@ import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Navigation from './Navigation';
 import { getCachedData } from '../../services/frontendData';
-import { initDatabase, getLogos } from '../../services/postgresDatabase';
+import { initDatabase, getLogos } from '../../services/jsonDatabase';
 
 const HeaderContainer = styled.header`
   position: fixed;

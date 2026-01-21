@@ -218,6 +218,7 @@ export const servicesData = [
       'Balcony suites with ocean views'
     ],
     image: 'https://images.unsplash.com/photo-1548574505-5e239809ee19?q=80&w=1564&auto=format&fit=crop',
+    contentImage: 'https://images.unsplash.com/photo-1599640842225-85d111c60e6b?q=80&w=1600&auto=format&fit=crop',
     seo: {
       title: 'Luxury Cruise Packages | Ocean & River Voyages',
       description: 'Set sail on a luxury cruise. Explore ocean and river destinations with all-inclusive amenities, shore excursions, and world-class service.'

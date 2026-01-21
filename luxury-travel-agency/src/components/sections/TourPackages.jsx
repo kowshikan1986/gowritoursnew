@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRightIcon, MapPinIcon } from '@heroicons/react/24/outline';
 import { servicesData } from '../../data/servicesData';
 import { fetchFrontendData, normalize } from '../../services/frontendData';
-import { onDataChange } from '../../services/postgresDatabase';
+import { onDataChange } from '../../services/jsonDatabase';
 
 // normalize is imported from frontendData
 
@@ -975,10 +975,12 @@ const TourPackages = () => {
               description: l1Cat.description || '',
               image: l1Cat.image || '',
               cards: l2Cards,
+              sort_order: l1Cat.sort_order || l1CatRaw.sort_order || 999,
             };
-          }).filter(l1 => l1.cards.length > 0); // Only include L1 categories that have L2 cards
+          }).filter(l1 => l1.cards.length > 0) // Only include L1 categories that have L2 cards
+            .sort((a, b) => (a.sort_order || 999) - (b.sort_order || 999)); // Sort by sort_order
           
-          console.log('TourPackages: All L1 Tour Categories:', allTourL1Categories.map(c => ({ name: c.name, cardCount: c.cards.length })));
+          console.log('TourPackages: All L1 Tour Categories:', allTourL1Categories.map(c => ({ name: c.name, cardCount: c.cards.length, sortOrder: c.sort_order })));
         }
         
         // Fallback: use first L1 category's L2 cards for backward compatibility

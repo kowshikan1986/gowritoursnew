@@ -1,5 +1,5 @@
 // Import seed data - Categories and Subcategories from the backend seed structure
-import { initDatabase, createCategory, getCategoryBySlug } from './postgresDatabase';
+import { initDatabase, createCategory, getCategoryBySlug } from './jsonDatabase';
 
 // Helper to convert image URL to base64 (optional - for now we'll store URLs)
 const urlToBase64 = async (url) => {

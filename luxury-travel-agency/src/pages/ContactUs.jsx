@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PhoneIcon, EnvelopeIcon, UserIcon, MapPinIcon, CheckCircleIcon, CalendarIcon, CurrencyPoundIcon } from '@heroicons/react/24/outline';
-import { getCategories, getTours } from '../services/postgresDatabase';
+import { getCategories, getTours } from '../services/jsonDatabase';
 
 const Page = styled.div`
   background: #f9fafb;

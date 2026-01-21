@@ -15,6 +15,7 @@ CREATE TABLE categories (
   slug VARCHAR(255) UNIQUE NOT NULL,
   description TEXT DEFAULT '',
   image TEXT DEFAULT '',
+  content_image TEXT DEFAULT '',
   parent_id VARCHAR(255),
   visible BOOLEAN DEFAULT TRUE,
   sort_order INTEGER DEFAULT 0,

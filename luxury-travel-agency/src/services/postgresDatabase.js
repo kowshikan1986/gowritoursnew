@@ -139,7 +139,7 @@ export const createCategory = async (data) => {
 
 export const updateCategory = async (slug, data) => {
   try {
-    // Upload image to local folder if new file present
+    // Upload hero image to local folder if new file present
     let imagePath = undefined;
     if (data.imageFile) {
       const formData = new FormData();
@@ -150,6 +150,19 @@ export const updateCategory = async (slug, data) => {
       });
       
       imagePath = uploadResponse.data.path;
+    }
+    
+    // Upload content image to local folder if new file present
+    let contentImagePath = undefined;
+    if (data.contentImageFile) {
+      const formData = new FormData();
+      formData.append('image', data.contentImageFile);
+      
+      const uploadResponse = await axios.post(`${API_BASE}/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      contentImagePath = uploadResponse.data.path;
     }
     
     const payload = {
@@ -166,7 +179,12 @@ export const updateCategory = async (slug, data) => {
       payload.image = imagePath;
     }
     
-    console.log('📦 Updating category', slug, 'with image:', imagePath ? 'YES (' + imagePath + ')' : 'NO (keeping existing)');
+    // Only include content_image in payload if it's being updated
+    if (contentImagePath !== undefined) {
+      payload.content_image = contentImagePath;
+    }
+    
+    console.log('📦 Updating category', slug, 'with image:', imagePath ? 'YES (' + imagePath + ')' : 'NO (keeping existing)', '| content_image:', contentImagePath ? 'YES' : 'NO');
     
     const response = await axios.put(`${API_BASE}/categories/${slug}`, payload);
     notifyDataChange('categories');

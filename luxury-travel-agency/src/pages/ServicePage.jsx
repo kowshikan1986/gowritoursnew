@@ -6,7 +6,7 @@ import { MapPinIcon, ArrowRightIcon, PaperAirplaneIcon } from '@heroicons/react/
 import { servicesData } from '../data/servicesData';
 import { fetchFrontendData, normalize, clearFrontendCache } from '../services/frontendData';
 import { importAllCategories } from '../services/importData';
-import { onDataChange } from '../services/postgresDatabase';
+import { onDataChange } from '../services/jsonDatabase';
 
 const PageContainer = styled.div`
   padding-top: 0;
@@ -15,6 +15,7 @@ const PageContainer = styled.div`
 const HeroSection = styled.div`
   width: 100%;
   height: 450px;
+  min-height: 300px;
   position: relative;
   display: flex;
   align-items: center;
@@ -31,15 +32,18 @@ const HeroSection = styled.div`
   }
 
   @media (max-width: 768px) {
-    height: 350px;
-    border-radius: 20px;
-    margin-bottom: 2.5rem;
+    height: auto;
+    min-height: 280px;
+    aspect-ratio: 16 / 9;
+    border-radius: 16px;
+    margin-bottom: 2rem;
   }
 
   @media (max-width: 480px) {
-    height: 300px;
-    border-radius: 15px;
-    margin-bottom: 2rem;
+    min-height: 220px;
+    aspect-ratio: 4 / 3;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
   }
 `;
 
@@ -78,19 +82,21 @@ const HeroBackground = styled.div`
 
   @media (max-width: 1024px) {
     img {
-      object-position: center;
+      object-position: center 30%;
     }
   }
 
   @media (max-width: 768px) {
     img {
-      object-position: center;
+      object-position: center 25%;
+      min-height: 100%;
     }
   }
 
   @media (max-width: 480px) {
     img {
-      object-position: center;
+      object-position: center 20%;
+      min-height: 100%;
     }
   }
 `;
@@ -101,6 +107,15 @@ const HeroContent = styled.div`
   padding: 0 2rem;
   z-index: 2;
   position: relative;
+
+  @media (max-width: 768px) {
+    padding: 0 1.5rem;
+    max-width: 100%;
+  }
+
+  @media (max-width: 480px) {
+    padding: 0 1rem;
+  }
 `;
 
 const Title = styled(motion.h1)`
@@ -110,7 +125,13 @@ const Title = styled(motion.h1)`
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 
   @media (max-width: 768px) {
-    font-size: 2.5rem;
+    font-size: 2.2rem;
+    margin-bottom: 1rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.75rem;
+    margin-bottom: 0.75rem;
   }
 `;
 
@@ -120,6 +141,17 @@ const Subtitle = styled(motion.p)`
   max-width: 600px;
   margin: 0 auto;
   line-height: 1.6;
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+    line-height: 1.5;
+    max-width: 100%;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
 `;
 
 const ContentSection = styled.div`
@@ -981,10 +1013,11 @@ const ServicePage = () => {
   const derivedService = React.useMemo(() => {
     console.log('🔨 Building derivedService - service:', !!service, 'matchedCategory:', !!matchedCategory, 'id:', id);
     
-    if (service) return service;
-    
+    // PRIORITY: Database category over static servicesData for dynamic image support
+    // Only use static servicesData if NO matching database category exists
     if (matchedCategory) {
       const imageToUse = matchedCategory.image || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80';
+      const contentImageToUse = matchedCategory.content_image || imageToUse;
       console.log('🎯 derivedService building for', id, '| Image length:', imageToUse?.length);
       
       // Add cache busting for uploaded images
@@ -995,12 +1028,19 @@ const ServicePage = () => {
         console.log('🖼️ Added cache busting to image:', finalImage);
       }
       
+      let finalContentImage = contentImageToUse;
+      if (contentImageToUse && contentImageToUse.startsWith('/uploads/')) {
+        const timestamp = matchedCategory.updated_at ? new Date(matchedCategory.updated_at).getTime() : Date.now();
+        finalContentImage = `${contentImageToUse}?v=${timestamp}`;
+      }
+      
       return {
         id: matchedCategory.slug || matchedCategory.id,
         title: matchedCategory.name,
         shortDescription: matchedCategory.description || 'Browse experiences for this category.',
         fullDescription: matchedCategory.description || '',
         image: finalImage,
+        content_image: finalContentImage,
         features: [],
         packages: filterToursByCategory(matchedCategory.id).map((tour) => ({
           ...tour,
@@ -1014,23 +1054,45 @@ const ServicePage = () => {
     }
     
     if (id === 'tours') {
+      // Check if we have a Tours category in the database with an image
+      const toursCategory = (allCategories || []).find(c => c.slug === 'tours' || c.name === 'Tours');
+      const toursImage = toursCategory?.image || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80';
+      const toursContentImage = toursCategory?.content_image || toursImage;
+      
+      // Add cache busting for uploaded images
+      let finalToursImage = toursImage;
+      if (toursImage && toursImage.startsWith('/uploads/')) {
+        const timestamp = toursCategory?.updated_at ? new Date(toursCategory.updated_at).getTime() : Date.now();
+        finalToursImage = `${toursImage}?v=${timestamp}`;
+      }
+      
+      let finalContentImage = toursContentImage;
+      if (toursContentImage && toursContentImage.startsWith('/uploads/')) {
+        const timestamp = toursCategory?.updated_at ? new Date(toursCategory.updated_at).getTime() : Date.now();
+        finalContentImage = `${toursContentImage}?v=${timestamp}`;
+      }
+      
       return {
         id: 'tours',
         title: 'Tours',
-        shortDescription: 'Explore our categories and packages.',
-        fullDescription: 'Browse all tour categories and drill down to see every package.',
-        image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80',
+        shortDescription: toursCategory?.description || 'Explore our categories and packages.',
+        fullDescription: toursCategory?.description || 'Browse all tour categories and drill down to see every package.',
+        image: finalToursImage,
+        content_image: finalContentImage,
         features: [],
         packages: [],
         seo: {
           title: 'Tours',
-          description: 'Discover tours by category and subcategory.',
+          description: toursCategory?.description || 'Discover tours by category and subcategory.',
         },
       };
     }
     
+    // Fallback to static servicesData only if no database category matched
+    if (service) return service;
+    
     return null;
-  }, [service, matchedCategory, id]);
+  }, [service, matchedCategory, id, allCategories]);
 
   useEffect(() => {
     if (derivedService) {
@@ -1566,7 +1628,7 @@ const ServicePage = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          <img src={derivedService.image} alt={derivedService.title} />
+          <img src={derivedService.content_image || derivedService.contentImage || derivedService.image} alt={derivedService.title} />
         </ImageContainer>
       </ContentSection>
 

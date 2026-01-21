@@ -238,9 +238,14 @@ const Footer = () => {
             <EnvelopeIcon />
             <span>info@gowritours.com</span>
           </ContactItem>
-          <ContactItem>
-            <ClockIcon />
-            <span>24/7 Concierge Service</span>
+          <ContactItem style={{ alignItems: 'flex-start' }}>
+            <MapPinIcon style={{ flexShrink: 0, marginTop: '2px' }} />
+            <span>
+              Gowri Tours & Travels LTD<br />
+              Suite 208, Stanmore Business and Innovation Centre,Howard Road,<br />
+              Stanmore, HA7 1BT<br />
+              Registration No: 16379099
+            </span>
           </ContactItem>
         </FooterSection>
       </FooterContent>
@@ -252,9 +257,9 @@ const Footer = () => {
           transition={{ duration: 0.6, delay: 0.4 }}
           viewport={{ once: true }}
         >
-          © 2024 GOWRI TOURS. All rights reserved. | 
-          <a href="#privacy" style={{ color: '#6A1B82', marginLeft: '0.5rem' }}>Privacy Policy</a> | 
-          <a href="#terms" style={{ color: '#6A1B82', marginLeft: '0.5rem' }}>Terms of Service</a>
+          © 2026 GOWRI TOURS. All rights reserved. | 
+          <a href="#privacy" style={{ color: '#ffffff', marginLeft: '0.5rem' }}>Privacy Policy</a> | 
+          <a href="#terms" style={{ color: '#ffffff', marginLeft: '0.5rem' }}>Terms of Service</a>
         </motion.div>
       </FooterBottom>
     </FooterContainer>
