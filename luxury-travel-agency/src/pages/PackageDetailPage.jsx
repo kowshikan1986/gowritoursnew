@@ -986,12 +986,21 @@ const PackageDetailPage = () => {
             >
               Tour Overview
             </TabButton>
-            <TabButton 
-              active={activeTab === 'itinerary'} 
-              onClick={() => setActiveTab('itinerary')}
-            >
-              Itinerary
-            </TabButton>
+            {/* Conditionally render Itinerary tab only if itinerary data exists */}
+            {(() => {
+              const itineraryArray = getActiveData('itinerary');
+              const detailedItinerary = getActiveData('detailedItinerary');
+              const hasItineraryData = (itineraryArray && Array.isArray(itineraryArray) && itineraryArray.length > 0) ||
+                (detailedItinerary && typeof detailedItinerary === 'string' && detailedItinerary.trim().length > 0);
+              return hasItineraryData ? (
+                <TabButton 
+                  active={activeTab === 'itinerary'} 
+                  onClick={() => setActiveTab('itinerary')}
+                >
+                  Itinerary
+                </TabButton>
+              ) : null;
+            })()}
             <TabButton 
               active={activeTab === 'dates'} 
               onClick={() => setActiveTab('dates')}
@@ -1004,12 +1013,22 @@ const PackageDetailPage = () => {
             >
               Other Information
             </TabButton>
-            <TabButton 
-              active={activeTab === 'pickup'} 
-              onClick={() => setActiveTab('pickup')}
-            >
-              Pick Up
-            </TabButton>
+            {/* Conditionally render Pick Up tab only if pickup data exists */}
+            {(() => {
+              const pickupData = getActiveData('pickupPoints');
+              const hasPickupData = pickupData && (
+                (typeof pickupData === 'string' && pickupData.trim().length > 0) ||
+                (Array.isArray(pickupData) && pickupData.length > 0)
+              );
+              return hasPickupData ? (
+                <TabButton 
+                  active={activeTab === 'pickup'} 
+                  onClick={() => setActiveTab('pickup')}
+                >
+                  Pick Up
+                </TabButton>
+              ) : null;
+            })()}
           </TabContainer>
 
           <AnimatePresence mode="wait">
@@ -1174,7 +1193,13 @@ const PackageDetailPage = () => {
               </motion.div>
             )}
 
-            {activeTab === 'itinerary' && (
+            {/* Conditionally render Itinerary tab content only if itinerary data exists */}
+            {(() => {
+              const itineraryArray = getActiveData('itinerary');
+              const detailedItinerary = getActiveData('detailedItinerary');
+              const hasItineraryData = (itineraryArray && Array.isArray(itineraryArray) && itineraryArray.length > 0) ||
+                (detailedItinerary && typeof detailedItinerary === 'string' && detailedItinerary.trim().length > 0);
+              return hasItineraryData && activeTab === 'itinerary' ? (
               <motion.div
                 key="itinerary"
                 initial={{ opacity: 0, y: 10 }}
@@ -1182,10 +1207,10 @@ const PackageDetailPage = () => {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
               >
-                {getActiveData('itinerary') && getActiveData('itinerary').length > 0 && (
+                {itineraryArray && itineraryArray.length > 0 && (
                   <div>
                     <SectionTitle><CalendarIcon /> Day-wise Itinerary</SectionTitle>
-                    {getActiveData('itinerary').map((item) => (
+                    {itineraryArray.map((item) => (
                       <ItineraryItem key={item.day} day={item.day}>
                         <DayTitle>Day {item.day}: {item.title}</DayTitle>
                         <DayDescription>{item.description}</DayDescription>
@@ -1195,13 +1220,13 @@ const PackageDetailPage = () => {
                 )}
                 
                 {/* Detailed Day-by-Day Itinerary */}
-                {getActiveData('detailedItinerary') && (
+                {detailedItinerary && detailedItinerary.trim().length > 0 && (
                   <div style={{ marginTop: '2rem', marginBottom: '2rem' }}>
                     <SectionTitle><CalendarIcon /> Detailed Day-by-Day Itinerary</SectionTitle>
                     <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb', overflowX: 'auto' }}>
                       <div 
                         style={{ lineHeight: '1.8', color: '#4a4a4a', fontFamily: 'inherit', wordWrap: 'break-word', overflowWrap: 'break-word' }}
-                        dangerouslySetInnerHTML={{ __html: getActiveData('detailedItinerary') }}
+                        dangerouslySetInnerHTML={{ __html: detailedItinerary }}
                         className="detailed-itinerary-content"
                       />
                       <style>{`
@@ -1229,7 +1254,8 @@ const PackageDetailPage = () => {
                   </div>
                 )}
               </motion.div>
-            )}
+              ) : null;
+            })()}
 
             {activeTab === 'dates' && (
               <motion.div
@@ -1239,7 +1265,7 @@ const PackageDetailPage = () => {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
               >
-                <SectionTitle><CalendarIcon /> Available Tour Dates</SectionTitle>
+                <SectionTitle><CalendarIcon /> Available Tour Date{getActiveData('tourDates') && getActiveData('tourDates').length > 1 ? 's' : ''}</SectionTitle>
                 {getActiveData('tourDates') && getActiveData('tourDates').length > 0 ? (
                   <HighlightList>
                     {getActiveData('tourDates').map((dateInfo, index) => (
@@ -1340,7 +1366,14 @@ const PackageDetailPage = () => {
               </motion.div>
             )}
 
-            {activeTab === 'pickup' && (
+            {/* Conditionally render Pick Up tab content only if data exists */}
+            {activeTab === 'pickup' && (() => {
+              const pickupData = getActiveData('pickupPoints');
+              const hasPickupData = pickupData && (
+                (typeof pickupData === 'string' && pickupData.trim().length > 0) ||
+                (Array.isArray(pickupData) && pickupData.length > 0)
+              );
+              return hasPickupData ? (
               <motion.div
                 key="pickup"
                 initial={{ opacity: 0, y: 10 }}
@@ -1376,7 +1409,8 @@ const PackageDetailPage = () => {
                   <p>Pick up points coming soon. Please contact us for details.</p>
                 )}
               </motion.div>
-            )}
+              ) : null;
+            })()}
 
           </AnimatePresence>
         </MainContent>
