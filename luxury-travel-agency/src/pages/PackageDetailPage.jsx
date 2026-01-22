@@ -980,12 +980,34 @@ const PackageDetailPage = () => {
           )}
           
           <TabContainer>
-            <TabButton 
-              active={activeTab === 'overview'} 
-              onClick={() => setActiveTab('overview')}
-            >
-              Tour Overview
-            </TabButton>
+            {/* Conditionally render Tour Overview tab only if overview data exists */}
+            {(() => {
+              const tourOverview = getActiveData('tourOverview');
+              const highlights = getActiveData('highlights');
+              const priceIncludes = getActiveData('priceIncludes');
+              const priceExcludes = getActiveData('priceExcludes');
+              const starDifference = getActiveData('starDifference');
+              const hotels = getActiveData('hotels');
+              const additionalExcursions = getActiveData('additionalExcursions');
+              const importantNotes = getActiveData('importantNotes');
+              const hasOverviewData = 
+                (tourOverview && Array.isArray(tourOverview) && tourOverview.length > 0) ||
+                (highlights && Array.isArray(highlights) && highlights.length > 0) ||
+                (priceIncludes && Array.isArray(priceIncludes) && priceIncludes.length > 0) ||
+                (priceExcludes && Array.isArray(priceExcludes) && priceExcludes.length > 0) ||
+                (starDifference && Array.isArray(starDifference) && starDifference.length > 0) ||
+                (hotels && typeof hotels === 'string' && hotels.trim().length > 0) ||
+                (additionalExcursions && Array.isArray(additionalExcursions) && additionalExcursions.length > 0) ||
+                (importantNotes && typeof importantNotes === 'string' && importantNotes.trim().length > 0);
+              return hasOverviewData ? (
+                <TabButton 
+                  active={activeTab === 'overview'} 
+                  onClick={() => setActiveTab('overview')}
+                >
+                  Tour Overview
+                </TabButton>
+              ) : null;
+            })()}
             {/* Conditionally render Itinerary tab only if itinerary data exists */}
             {(() => {
               const itineraryArray = getActiveData('itinerary');
@@ -1001,18 +1023,35 @@ const PackageDetailPage = () => {
                 </TabButton>
               ) : null;
             })()}
-            <TabButton 
-              active={activeTab === 'dates'} 
-              onClick={() => setActiveTab('dates')}
-            >
-              Dates
-            </TabButton>
-            <TabButton 
-              active={activeTab === 'otherinfo'} 
-              onClick={() => setActiveTab('otherinfo')}
-            >
-              Other Information
-            </TabButton>
+            {/* Conditionally render Dates tab only if tour dates exist */}
+            {(() => {
+              const tourDates = getActiveData('tourDates');
+              const hasDatesData = tourDates && Array.isArray(tourDates) && tourDates.length > 0;
+              return hasDatesData ? (
+                <TabButton 
+                  active={activeTab === 'dates'} 
+                  onClick={() => setActiveTab('dates')}
+                >
+                  Dates
+                </TabButton>
+              ) : null;
+            })()}
+            {/* Conditionally render Other Information tab only if data exists */}
+            {(() => {
+              const otherInfo = getActiveData('otherInfo');
+              const termsAndConditions = getActiveData('termsAndConditions');
+              const hasOtherInfoData = 
+                (otherInfo && ((typeof otherInfo === 'string' && otherInfo.trim().length > 0) || (Array.isArray(otherInfo) && otherInfo.length > 0))) ||
+                (termsAndConditions && ((typeof termsAndConditions === 'string' && termsAndConditions.trim().length > 0) || (Array.isArray(termsAndConditions) && termsAndConditions.length > 0)));
+              return hasOtherInfoData ? (
+                <TabButton 
+                  active={activeTab === 'otherinfo'} 
+                  onClick={() => setActiveTab('otherinfo')}
+                >
+                  Other Information
+                </TabButton>
+              ) : null;
+            })()}
             {/* Conditionally render Pick Up tab only if pickup data exists */}
             {(() => {
               const pickupData = getActiveData('pickupPoints');
@@ -1032,7 +1071,26 @@ const PackageDetailPage = () => {
           </TabContainer>
 
           <AnimatePresence mode="wait">
-            {activeTab === 'overview' && (
+            {/* Conditionally render Tour Overview tab content only if data exists */}
+            {(() => {
+              const tourOverview = getActiveData('tourOverview');
+              const highlights = getActiveData('highlights');
+              const priceIncludes = getActiveData('priceIncludes');
+              const priceExcludes = getActiveData('priceExcludes');
+              const starDifference = getActiveData('starDifference');
+              const hotels = getActiveData('hotels');
+              const additionalExcursions = getActiveData('additionalExcursions');
+              const importantNotes = getActiveData('importantNotes');
+              const hasOverviewData = 
+                (tourOverview && Array.isArray(tourOverview) && tourOverview.length > 0) ||
+                (highlights && Array.isArray(highlights) && highlights.length > 0) ||
+                (priceIncludes && Array.isArray(priceIncludes) && priceIncludes.length > 0) ||
+                (priceExcludes && Array.isArray(priceExcludes) && priceExcludes.length > 0) ||
+                (starDifference && Array.isArray(starDifference) && starDifference.length > 0) ||
+                (hotels && typeof hotels === 'string' && hotels.trim().length > 0) ||
+                (additionalExcursions && Array.isArray(additionalExcursions) && additionalExcursions.length > 0) ||
+                (importantNotes && typeof importantNotes === 'string' && importantNotes.trim().length > 0);
+              return hasOverviewData && activeTab === 'overview' ? (
               <motion.div
                 key="overview"
                 initial={{ opacity: 0, y: 10 }}
@@ -1191,7 +1249,8 @@ const PackageDetailPage = () => {
                   </div>
                 )}
               </motion.div>
-            )}
+              ) : null;
+            })()}
 
             {/* Conditionally render Itinerary tab content only if itinerary data exists */}
             {(() => {
@@ -1257,7 +1316,11 @@ const PackageDetailPage = () => {
               ) : null;
             })()}
 
-            {activeTab === 'dates' && (
+            {/* Conditionally render Dates tab content only if tour dates exist */}
+            {(() => {
+              const tourDates = getActiveData('tourDates');
+              const hasDatesData = tourDates && Array.isArray(tourDates) && tourDates.length > 0;
+              return hasDatesData && activeTab === 'dates' ? (
               <motion.div
                 key="dates"
                 initial={{ opacity: 0, y: 10 }}
@@ -1265,23 +1328,27 @@ const PackageDetailPage = () => {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
               >
-                <SectionTitle><CalendarIcon /> Available Tour Date{getActiveData('tourDates') && getActiveData('tourDates').length > 1 ? 's' : ''}</SectionTitle>
-                {getActiveData('tourDates') && getActiveData('tourDates').length > 0 ? (
-                  <HighlightList>
-                    {getActiveData('tourDates').map((dateInfo, index) => (
-                      <HighlightItem key={index}>
-                        <CalendarIcon />
-                        {dateInfo.date || dateInfo}
-                      </HighlightItem>
-                    ))}
-                  </HighlightList>
-                ) : (
-                  <p>Tour dates coming soon. Please contact us for availability.</p>
-                )}
+                <SectionTitle><CalendarIcon /> Available Tour Date{tourDates.length > 1 ? 's' : ''}</SectionTitle>
+                <HighlightList>
+                  {tourDates.map((dateInfo, index) => (
+                    <HighlightItem key={index}>
+                      <CalendarIcon />
+                      {dateInfo.date || dateInfo}
+                    </HighlightItem>
+                  ))}
+                </HighlightList>
               </motion.div>
-            )}
+              ) : null;
+            })()}
 
-            {activeTab === 'otherinfo' && (
+            {/* Conditionally render Other Information tab content only if data exists */}
+            {(() => {
+              const otherInfo = getActiveData('otherInfo');
+              const termsAndConditions = getActiveData('termsAndConditions');
+              const hasOtherInfoData = 
+                (otherInfo && ((typeof otherInfo === 'string' && otherInfo.trim().length > 0) || (Array.isArray(otherInfo) && otherInfo.length > 0))) ||
+                (termsAndConditions && ((typeof termsAndConditions === 'string' && termsAndConditions.trim().length > 0) || (Array.isArray(termsAndConditions) && termsAndConditions.length > 0)));
+              return hasOtherInfoData && activeTab === 'otherinfo' ? (
               <motion.div
                 key="otherinfo"
                 initial={{ opacity: 0, y: 10 }}
@@ -1364,7 +1431,8 @@ const PackageDetailPage = () => {
                   .rich-text-content li { margin-bottom: 0.25rem; }
                 `}</style>
               </motion.div>
-            )}
+              ) : null;
+            })()}
 
             {/* Conditionally render Pick Up tab content only if data exists */}
             {activeTab === 'pickup' && (() => {

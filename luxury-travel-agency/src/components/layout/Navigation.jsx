@@ -700,6 +700,10 @@ const Navigation = ({ isMobileMenuOpen, onClose }) => {
                           return (a.sort_order || 0) - (b.sort_order || 0);
                         });
                                           
+                        // Check if parent is Cruises - redirect L2 to parent page
+                        const isCruisesChild = categorySlug === 'cruises';
+                        const l2TargetSlug = isCruisesChild ? 'cruises' : childSlug;
+                        
                         return (
                           <React.Fragment key={childSlug}>
                             <DropdownPill
@@ -716,7 +720,7 @@ const Navigation = ({ isMobileMenuOpen, onClose }) => {
                                 if (hasGrandchildren) {
                                   setExpandedSubSlug(isExpanded ? null : childSlug);
                                 } else {
-                                  navigate(`/service/${childSlug}`);
+                                  navigate(`/service/${l2TargetSlug}`);
                                   setOpenSlug(null);
                                   setExpandedSubSlug(null);
                                   if (onClose) onClose();
@@ -730,7 +734,7 @@ const Navigation = ({ isMobileMenuOpen, onClose }) => {
                                   if (hasGrandchildren) {
                                     setExpandedSubSlug(isExpanded ? null : childSlug);
                                   } else {
-                                    navigate(`/service/${childSlug}`);
+                                    navigate(`/service/${l2TargetSlug}`);
                                     setOpenSlug(null);
                                     setExpandedSubSlug(null);
                                     if (onClose) onClose();

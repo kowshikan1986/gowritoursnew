@@ -25,6 +25,17 @@ const BackgroundImage = styled(motion.div)`
   background-size: cover;
   background-position: center center;
   background-attachment: scroll;
+  animation: heroZoomIn 20s ease-out forwards;
+  will-change: transform;
+  
+  @keyframes heroZoomIn {
+    0% {
+      transform: scale(1);
+    }
+    100% {
+      transform: scale(1.15);
+    }
+  }
   
   &::before {
     content: '';
@@ -271,12 +282,12 @@ const Hero = () => {
           animate={{ 
             opacity: 1,
             transition: {
-              opacity: { duration: 0.001, ease: 'linear' }
+              opacity: { duration: 1.2, ease: 'easeInOut' }
             }
           }}
           exit={{ 
             opacity: 0,
-            transition: { duration: 0.001, ease: 'linear' }
+            transition: { duration: 1.2, ease: 'easeInOut' }
           }}
           style={{
             transform: `translate(${mousePosition.x}px, ${mousePosition.y}px)`
@@ -321,10 +332,10 @@ const Hero = () => {
         <AnimatePresence mode="sync">
           <HeroTitle
             key={`title-${currentIndex}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.001 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
           >
             {currentHero.title || 'Extraordinary Journeys'}
             <br />
@@ -335,10 +346,10 @@ const Hero = () => {
         <AnimatePresence mode="sync">
           <HeroSubtitle
             key={`subtitle-${currentIndex}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.001 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
           >
             {currentHero.subtitle || "Discover the world's most exclusive destinations with personalized luxury travel experiences crafted to perfection for the discerning traveler."}
           </HeroSubtitle>
@@ -347,10 +358,10 @@ const Hero = () => {
         <AnimatePresence mode="sync">
           <motion.div
             key={`cta-${currentIndex}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.001 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
           >
             <CTAButton
               whileHover={{ scale: 1.05 }}

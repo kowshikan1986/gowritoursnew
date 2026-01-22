@@ -1115,6 +1115,12 @@ const ServicePage = () => {
           navigate('/service/other-services', { replace: true });
           return;
         }
+        
+        if (parentSlug === 'cruises') {
+          // This is a subcategory of cruises, redirect to main page
+          navigate('/service/cruises', { replace: true });
+          return;
+        }
       }
       
       // If this is an L2 subcategory (not a tour root) with packages, redirect to the first (and only) package
@@ -2131,7 +2137,8 @@ const ServicePage = () => {
                   const slug = sub.slug || sub.id || normalize(sub.name || '');
                   const isOtherServices = normalize(id) === 'other-services';
                   const isSriLankaTours = normalize(id) === 'sri-lanka-tours';
-                  const linkTarget = (isOtherServices || isSriLankaTours) ? '/contact-us' : `/service/${slug}`;
+                  const isCruises = normalize(id) === 'cruises';
+                  const linkTarget = (isOtherServices || isSriLankaTours) ? '/contact-us' : (isCruises ? '/service/cruises' : `/service/${slug}`);
                   const subImage = getImage(sub);
                   const location = sub.location || null;
                   
