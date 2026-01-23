@@ -5,12 +5,37 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
 import fs from 'fs';
+import nodemailer from 'nodemailer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ==================== EMAIL CONFIGURATION ====================
+// Option 1: Gmail with App Password (recommended for small projects)
+// Generate app password at: https://myaccount.google.com/apppasswords
+const EMAIL_CONFIG = {
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER || 'gowritour@gmail.com',
+    pass: process.env.EMAIL_PASS || 'YOUR_16_CHAR_APP_PASSWORD' // Replace with your Gmail App Password
+  }
+};
+
+// Create reusable transporter
+const transporter = nodemailer.createTransport(EMAIL_CONFIG);
+
+// Verify email configuration on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.log('⚠️ Email configuration error:', error.message);
+    console.log('📧 Email sending will not work until configured properly');
+  } else {
+    console.log('✅ Email server is ready to send messages');
+  }
+});
 
 // JSON-only database mode
 console.log('✅ Using JSON-only database mode');
@@ -741,6 +766,168 @@ app.delete('/api/ads/:id', async (req, res) => {
 // Handle client-side routing - return index.html for all other routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
+// ==================== CONTACT FORM WITH EMAIL ====================
+// Sends email AND stores in database for backup
+
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { name, email, phone, travelers, budget, travelDates, selectedPackage, interests, message } = req.body;
+    
+    // Validate required fields
+    if (!name || !email || !message) {
+      return res.status(400).json({ success: false, error: 'Name, email, and message are required.' });
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ success: false, error: 'Please provide a valid email address.' });
+    }
+    
+    // Sanitize inputs (basic XSS prevention)
+    const sanitize = (str) => String(str || '').replace(/[<>]/g, '');
+    
+    // Create inquiry object for database backup
+    const inquiry = {
+      id: Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9),
+      name: sanitize(name),
+      email: sanitize(email),
+      phone: sanitize(phone) || '',
+      travelers: sanitize(travelers) || '',
+      budget: sanitize(budget) || 'Not specified',
+      travelDates: sanitize(travelDates) || 'Flexible',
+      selectedPackage: sanitize(selectedPackage) || 'Not specified',
+      interests: sanitize(interests) || 'Not specified',
+      message: sanitize(message),
+      created_at: new Date().toISOString(),
+      status: 'new'
+    };
+    
+    // Store in database as backup
+    if (!jsonDatabase.inquiries) {
+      jsonDatabase.inquiries = [];
+    }
+    jsonDatabase.inquiries.unshift(inquiry);
+    saveJsonDatabase();
+    
+    // Prepare email content
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #6A1B82; border-bottom: 2px solid #6A1B82; padding-bottom: 10px;">
+          New Travel Inquiry
+        </h2>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr><td style="padding: 8px 0; font-weight: bold; width: 140px;">Name:</td><td>${inquiry.name}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold;">Email:</td><td><a href="mailto:${inquiry.email}">${inquiry.email}</a></td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold;">Phone:</td><td>${inquiry.phone || 'Not provided'}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold;">Travelers:</td><td>${inquiry.travelers || 'Not specified'}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold;">Budget:</td><td>${inquiry.budget}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold;">Travel Dates:</td><td>${inquiry.travelDates}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold;">Package:</td><td>${inquiry.selectedPackage}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold;">Interests:</td><td>${inquiry.interests}</td></tr>
+        </table>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+          <strong>Message:</strong>
+          <p style="white-space: pre-wrap;">${inquiry.message}</p>
+        </div>
+        
+        <p style="margin-top: 20px; color: #888; font-size: 12px;">
+          Received: ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })}
+        </p>
+      </div>
+    `;
+    
+    const emailText = `
+New Travel Inquiry
+
+Name: ${inquiry.name}
+Email: ${inquiry.email}
+Phone: ${inquiry.phone || 'Not provided'}
+Travelers: ${inquiry.travelers || 'Not specified'}
+Budget: ${inquiry.budget}
+Travel Dates: ${inquiry.travelDates}
+Package: ${inquiry.selectedPackage}
+Interests: ${inquiry.interests}
+
+Message:
+${inquiry.message}
+
+Received: ${new Date().toISOString()}
+    `;
+    
+    // Send email
+    try {
+      await transporter.sendMail({
+        from: `"Gowri Tours Website" <${EMAIL_CONFIG.auth.user}>`,
+        to: 'gowritour@gmail.com',
+        replyTo: inquiry.email,
+        subject: `New Travel Inquiry from ${inquiry.name}`,
+        text: emailText,
+        html: emailHtml
+      });
+      
+      console.log('✅ Inquiry email sent successfully');
+      res.json({ success: true, message: 'Thank you! Your inquiry has been sent. We will contact you within 24 hours.' });
+    } catch (emailError) {
+      console.error('⚠️ Email sending failed:', emailError.message);
+      // Still return success since inquiry is saved in database
+      res.json({ 
+        success: true, 
+        message: 'Thank you! Your inquiry has been received. We will contact you within 24 hours.',
+        note: 'Email notification pending'
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Error processing inquiry:', error.message);
+    res.status(500).json({ success: false, error: 'Failed to submit inquiry. Please try again or email us directly.' });
+  }
+});
+
+// Get all inquiries (for admin)
+app.get('/api/inquiries', (req, res) => {
+  res.json(jsonDatabase.inquiries || []);
+});
+
+// Update inquiry status
+app.put('/api/inquiries/:id', (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  
+  if (!jsonDatabase.inquiries) {
+    return res.status(404).json({ error: 'No inquiries found' });
+  }
+  
+  const inquiry = jsonDatabase.inquiries.find(i => i.id === id);
+  if (!inquiry) {
+    return res.status(404).json({ error: 'Inquiry not found' });
+  }
+  
+  inquiry.status = status;
+  saveJsonDatabase();
+  res.json(inquiry);
+});
+
+// Delete inquiry
+app.delete('/api/inquiries/:id', (req, res) => {
+  const { id } = req.params;
+  
+  if (!jsonDatabase.inquiries) {
+    return res.status(404).json({ error: 'No inquiries found' });
+  }
+  
+  const index = jsonDatabase.inquiries.findIndex(i => i.id === id);
+  if (index === -1) {
+    return res.status(404).json({ error: 'Inquiry not found' });
+  }
+  
+  jsonDatabase.inquiries.splice(index, 1);
+  saveJsonDatabase();
+  res.json({ success: true });
 });
 
 // Start server

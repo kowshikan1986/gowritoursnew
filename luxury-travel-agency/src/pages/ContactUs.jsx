@@ -464,9 +464,13 @@ const ContactUs = () => {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
 
-  const submit = (e) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const submit = async (e) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.message) return;
+    
+    setIsSubmitting(true);
     
     // Find selected package label
     const selectedTour = tours.find(t => t.id === form.packageId || t.slug === form.packageId);
@@ -484,20 +488,39 @@ const ContactUs = () => {
       ? interestOptions.filter(opt => form.interests.includes(opt.id)).map(opt => opt.label).join(', ')
       : 'Not specified';
     
-    const finalBody = `Name: ${form.name}
-Email: ${form.email}
-Phone: ${form.phone}
-Number of Travelers: ${form.travelers}
-Budget Range: ${form.budget || 'Not specified'}
-Travel Dates: ${form.travelDates || 'Flexible'}
-Selected Package: ${pkgLabel}
-Interests: ${interestsText}
-
-Message:
-${form.message}`;
-    
-    window.location.href = `mailto:info@gowritours.com?subject=Luxury%20Travel%20Inquiry&body=${encodeURIComponent(finalBody)}`;
-    setShowSuccess(true);
+    try {
+      // Send to your server API which handles email via nodemailer
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          phone: form.phone || '',
+          travelers: form.travelers || '',
+          budget: form.budget || '',
+          travelDates: form.travelDates || '',
+          selectedPackage: pkgLabel,
+          interests: interestsText,
+          message: form.message
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setShowSuccess(true);
+      } else {
+        alert(result.message || 'Failed to send. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to send. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   useEffect(() => {
@@ -684,7 +707,9 @@ ${form.message}`;
                   <FullRow>
                     <ButtonGroup>
                       <SecondaryButton type="button" onClick={prevStep}>← Previous</SecondaryButton>
-                      <Submit type="submit" disabled={Object.keys(errors).length > 0}>Send Inquiry ✓</Submit>
+                      <Submit type="submit" disabled={Object.keys(errors).length > 0 || isSubmitting}>
+                        {isSubmitting ? 'Sending...' : 'Send Inquiry ✓'}
+                      </Submit>
                     </ButtonGroup>
                   </FullRow>
                 </>
@@ -745,7 +770,7 @@ ${form.message}`;
               <IconWrap><EnvelopeIcon style={{ width: 20, height: 20 }} /></IconWrap>
               <InfoText>
                 <span>E-mail</span>
-                <strong>info@gowritours.com</strong>
+                <strong>gowritour@gmail.com</strong>
                 <span>Response within 24 hours</span>
               </InfoText>
             </InfoItem>

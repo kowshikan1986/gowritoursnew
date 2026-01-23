@@ -328,7 +328,7 @@ const Contact = () => {
     {
       icon: <EnvelopeIcon />,
       label: 'E-mail',
-      text: 'info@gowritours.com',
+      text: 'gowritour@gmail.com',
       subtext: 'Response within 24 hours'
     }
   ];

@@ -236,7 +236,7 @@ const Footer = () => {
           </ContactItem>
           <ContactItem>
             <EnvelopeIcon />
-            <span>info@gowritours.com</span>
+            <span>gowritour@gmail.com</span>
           </ContactItem>
           <ContactItem style={{ alignItems: 'flex-start' }}>
             <MapPinIcon style={{ flexShrink: 0, marginTop: '2px' }} />

@@ -2138,7 +2138,8 @@ const ServicePage = () => {
                   const isOtherServices = normalize(id) === 'other-services';
                   const isSriLankaTours = normalize(id) === 'sri-lanka-tours';
                   const isCruises = normalize(id) === 'cruises';
-                  const linkTarget = (isOtherServices || isSriLankaTours) ? '/contact-us' : (isCruises ? '/service/cruises' : `/service/${slug}`);
+                  const isPrivateTours = normalize(id) === 'private-tours';
+                  const linkTarget = (isOtherServices || isSriLankaTours) ? '/contact-us' : (isCruises ? '/service/cruises' : (isPrivateTours ? '/service/private-tours' : `/service/${slug}`));
                   const subImage = getImage(sub);
                   const location = sub.location || null;
                   

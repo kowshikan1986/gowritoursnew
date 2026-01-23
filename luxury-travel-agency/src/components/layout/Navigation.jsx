@@ -700,9 +700,10 @@ const Navigation = ({ isMobileMenuOpen, onClose }) => {
                           return (a.sort_order || 0) - (b.sort_order || 0);
                         });
                                           
-                        // Check if parent is Cruises - redirect L2 to parent page
+                        // Check if parent is Cruises or Private Tours - redirect L2 to parent page
                         const isCruisesChild = categorySlug === 'cruises';
-                        const l2TargetSlug = isCruisesChild ? 'cruises' : childSlug;
+                        const isPrivateToursChild = categorySlug === 'private-tours';
+                        const l2TargetSlug = isCruisesChild ? 'cruises' : (isPrivateToursChild ? 'private-tours' : childSlug);
                         
                         return (
                           <React.Fragment key={childSlug}>
