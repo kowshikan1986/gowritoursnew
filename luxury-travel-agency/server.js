@@ -20,7 +20,7 @@ const EMAIL_CONFIG = {
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER || 'gowritour@gmail.com',
-    pass: process.env.EMAIL_PASS || 'YOUR_16_CHAR_APP_PASSWORD' // Replace with your Gmail App Password
+    pass: process.env.EMAIL_PASS || 'uwkgbqbcrinnsiqw'
   }
 };
 
@@ -759,6 +759,48 @@ app.delete('/api/ads/:id', async (req, res) => {
     res.json({ message: 'Ad deleted successfully' });
   } catch (error) {
     console.error('Error deleting ad:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== SETTINGS ====================
+
+app.get('/api/settings', async (req, res) => {
+  try {
+    const settings = jsonDatabase?.settings || {};
+    res.json(settings);
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update settings
+app.put('/api/settings', async (req, res) => {
+  try {
+    const { termsAndConditions, privacyPolicy } = req.body;
+    
+    if (!jsonDatabase.settings) {
+      jsonDatabase.settings = {};
+    }
+    
+    if (termsAndConditions !== undefined) {
+      jsonDatabase.settings.termsAndConditions = termsAndConditions;
+      jsonDatabase.settings.termsUpdatedAt = new Date().toISOString();
+    }
+    
+    if (privacyPolicy !== undefined) {
+      jsonDatabase.settings.privacyPolicy = privacyPolicy;
+      jsonDatabase.settings.privacyUpdatedAt = new Date().toISOString();
+    }
+    
+    jsonDatabase.settings.updatedAt = new Date().toISOString();
+    
+    saveJsonDatabase();
+    
+    res.json(jsonDatabase.settings);
+  } catch (error) {
+    console.error('Error updating settings:', error);
     res.status(500).json({ error: error.message });
   }
 });

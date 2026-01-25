@@ -302,26 +302,6 @@ const Services = () => {
             </ServiceCard>
           ))}
         </ServicesGrid>
-
-        <CTAContainer
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          viewport={{ once: true }}
-        >
-          <CTATitle>Ready to Experience Luxury Travel?</CTATitle>
-          <CTADescription>
-            Let us create your perfect luxury travel experience. Our expert team is ready to design 
-            a bespoke journey tailored to your exact preferences and desires.
-          </CTADescription>
-          <CTAButton
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => document.querySelector('#contact').scrollIntoView({ behavior: 'smooth' })}
-          >
-            Start Planning Today
-          </CTAButton>
-        </CTAContainer>
       </Container>
     </ServicesContainer>
   );

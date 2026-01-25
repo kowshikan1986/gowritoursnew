@@ -422,6 +422,22 @@ export const deleteAd = async (id) => {
   await fetch(`${API_BASE}/ads/${id}`, { method: 'DELETE' });
 };
 
+// ==================== SETTINGS ====================
+export const getSettings = async () => {
+  const response = await fetch(`${API_BASE}/settings`);
+  return response.json();
+};
+
+export const updateSettings = async (data) => {
+  const response = await fetch(`${API_BASE}/settings`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  notifyDataChange('settings-updated');
+  return response.json();
+};
+
 // Initialize database (no-op for JSON)
 export const initDatabase = async () => {
   console.log('JSON Database: No initialization needed');

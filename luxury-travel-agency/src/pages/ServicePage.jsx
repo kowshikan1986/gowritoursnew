@@ -1583,13 +1583,16 @@ const ServicePage = () => {
           >
             {derivedService.title}
           </Title>
-          <Subtitle
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            {derivedService.shortDescription}
-          </Subtitle>
+          {/* Hide description in hero for private-tours - it's shown in content section instead */}
+          {normalize(id) !== 'private-tours' && (
+            <Subtitle
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+            >
+              {derivedService.shortDescription}
+            </Subtitle>
+          )}
         </HeroContent>
       </HeroSection>
 
@@ -1601,7 +1604,6 @@ const ServicePage = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <h2>Experience <span>Luxury</span></h2>
             <div 
               dangerouslySetInnerHTML={{ __html: derivedService.fullDescription }}
               style={{ lineHeight: '1.8', color: '#666', fontSize: '1.1rem' }}
@@ -2172,7 +2174,7 @@ const ServicePage = () => {
                         )}
                         <CategoryFooter>
                           <ViewDetailsButton>
-                            {(isOtherServices || isSriLankaTours) ? 'Enquire Now' : 'View Details'}
+                            {(isOtherServices || isSriLankaTours || isPrivateTours) ? 'Enquire Now' : 'View Details'}
                             <ArrowRightIcon style={{ width: '16px', height: '16px' }} />
                           </ViewDetailsButton>
                         </CategoryFooter>

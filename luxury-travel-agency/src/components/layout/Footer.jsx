@@ -257,9 +257,8 @@ const Footer = () => {
           transition={{ duration: 0.6, delay: 0.4 }}
           viewport={{ once: true }}
         >
-          © 2026 GOWRI TOURS. All rights reserved. | 
-          <a href="#privacy" style={{ color: '#ffffff', marginLeft: '0.5rem' }}>Privacy Policy</a> | 
-          <a href="#terms" style={{ color: '#ffffff', marginLeft: '0.5rem' }}>Terms of Service</a>
+        © 2026 GOWRI TOURS. All rights reserved. | 
+          <Link to="/terms" style={{ color: '#ffffff', marginLeft: '0.5rem' }}>Terms of Service</Link>
         </motion.div>
       </FooterBottom>
     </FooterContainer>

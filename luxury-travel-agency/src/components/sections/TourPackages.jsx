@@ -501,7 +501,7 @@ const ExploreButton = styled(Link)`
   }
 `;
 
-const ServiceCard = memo(({ service, index, forceServiceLink, isVehicleHire }) => {
+const ServiceCard = memo(({ service, index, forceServiceLink, isVehicleHire, parentCategoryId }) => {
   const [currentPackageIndex, setCurrentPackageIndex] = useState(0);
   const hasPackages = service.packages && service.packages.length > 0;
   const [showSubs, setShowSubs] = useState(false);
@@ -535,11 +535,15 @@ const ServiceCard = memo(({ service, index, forceServiceLink, isVehicleHire }) =
   const currentData = hasPackages ? service.packages[currentPackageIndex] : service;
   
   // Resolve link: if forceServiceLink is true, link to the subcategory service page
-  const linkTo = forceServiceLink 
-    ? `/service/${service.id}`
-    : (hasPackages && currentData.id 
-      ? `/package/${currentData.id}` 
-      : `/service/${service.id}`);
+  // Private Tours should redirect to contact page (check both the service itself and its parent)
+  const isPrivateTours = normalize(service.id || service.slug || service.title || '') === 'private-tours' || normalize(parentCategoryId || '') === 'private-tours';
+  const linkTo = isPrivateTours 
+    ? '/contact-us'
+    : (forceServiceLink 
+      ? `/service/${service.id}`
+      : (hasPackages && currentData.id 
+        ? `/package/${currentData.id}` 
+        : `/service/${service.id}`));
   const categorySlug = service.id || service.slug || normalize(service.title);
 
   const handleTitleClick = (e) => {
@@ -589,15 +593,20 @@ const ServiceCard = memo(({ service, index, forceServiceLink, isVehicleHire }) =
               </SubToggle>
               {showSubs && (
                 <SubCategoryList>
-                  {service.subcategories.map((sub) => (
-                    <SubCategoryChip
-                      key={sub.slug || sub.id}
-                      to={`/service/${categorySlug}?sub=${sub.slug || sub.id || ''}`}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {sub.name}
-                    </SubCategoryChip>
-                  ))}
+                  {service.subcategories.map((sub) => {
+                    const isPrivateTours = categorySlug === 'private-tours';
+                    const isCruises = categorySlug === 'cruises';
+                    const subLink = isPrivateTours ? '/service/private-tours' : (isCruises ? '/service/cruises' : `/service/${categorySlug}?sub=${sub.slug || sub.id || ''}`);
+                    return (
+                      <SubCategoryChip
+                        key={sub.slug || sub.id}
+                        to={subLink}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {sub.name}
+                      </SubCategoryChip>
+                    );
+                  })}
                 </SubCategoryList>
               )}
             </>
@@ -696,16 +705,21 @@ const ServiceCard = memo(({ service, index, forceServiceLink, isVehicleHire }) =
                   <DetailSection>
                     <DetailLabel>Subcategories</DetailLabel>
                     <SubCategoryList style={{ marginTop: '0.5rem' }}>
-                      {service.subcategories.map((sub) => (
-                        <SubCategoryChip
-                          key={sub.slug || sub.id}
-                          to={`/service/${categorySlug}?sub=${sub.slug || sub.id || ''}`}
-                          onClick={() => setShowExpanded(false)}
-                          style={{ background: '#6A1B82', color: 'white', border: 'none' }}
-                        >
-                          {sub.name}
-                        </SubCategoryChip>
-                      ))}
+                      {service.subcategories.map((sub) => {
+                        const isPrivateTours = categorySlug === 'private-tours';
+                        const isCruises = categorySlug === 'cruises';
+                        const subLink = isPrivateTours ? '/service/private-tours' : (isCruises ? '/service/cruises' : `/service/${categorySlug}?sub=${sub.slug || sub.id || ''}`);
+                        return (
+                          <SubCategoryChip
+                            key={sub.slug || sub.id}
+                            to={subLink}
+                            onClick={() => setShowExpanded(false)}
+                            style={{ background: '#6A1B82', color: 'white', border: 'none' }}
+                          >
+                            {sub.name}
+                          </SubCategoryChip>
+                        );
+                      })}
                     </SubCategoryList>
                   </DetailSection>
                 )}
@@ -1266,6 +1280,7 @@ const TourPackages = () => {
               index={index} 
               forceServiceLink={true}
               isVehicleHire={isVehicleHire}
+              parentCategoryId={selectedL1Id}
             />
           ))}
         </Grid>
@@ -1325,7 +1340,8 @@ const TourPackages = () => {
                     key={`${selectedL1}-${service.id}`} 
                     service={service} 
                     index={index} 
-                    forceServiceLink={true} 
+                    forceServiceLink={true}
+                    parentCategoryId={selectedL1}
                   />
                 ))}
               </Grid>

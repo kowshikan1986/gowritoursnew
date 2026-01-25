@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive Navigation Menu - Click to Expand</title>
+    <style>
+        /* CSS Reset and Base Styles */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary-color: #1a365d;
+            --primary-hover: #2c5282;
+            --accent-color: #c9a227;
+            --text-color: #2d3748;
+            --text-light: #718096;
+            --bg-color: #ffffff;
+            --bg-secondary: #f7fafc;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --transition-fast: 150ms ease;
+            --transition-normal: 250ms ease;
+            --transition-slow: 350ms ease;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: var(--bg-secondary);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        /* Header and Navigation Container */
+        .header {
+            background-color: var(--bg-color);
+            box-shadow: var(--shadow-md);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-decoration: none;
+            padding: 1rem 0;
+        }
+
+        /* Mobile Menu Toggle Button */
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            z-index: 1001;
+        }
+
+        .menu-toggle span {
+            display: block;
+            width: 24px;
+            height: 2px;
+            background-color: var(--primary-color);
+            margin: 5px 0;
+            transition: var(--transition-normal);
+            transform-origin: center;
+        }
+
+        .menu-toggle.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+
+        .menu-toggle.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .menu-toggle.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(5px, -5px);
+        }
+
+        /* Main Navigation */
+        .main-nav {
+            display: flex;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 0;
+        }
+
+        /* Navigation Items */
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1.25rem 1rem;
+            text-decoration: none;
+            color: var(--text-color);
+            font-weight: 500;
+            transition: color var(--transition-fast), background-color var(--transition-fast);
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .nav-link:hover,
+        .nav-link:focus {
+            color: var(--primary-color);
+            background-color: var(--bg-secondary);
+        }
+
+        .nav-link:focus {
+            outline: 2px solid var(--accent-color);
+            outline-offset: -2px;
+        }
+
+        /* Dropdown Arrow Icon */
+        .nav-link .arrow {
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid currentColor;
+            transition: transform var(--transition-normal);
+        }
+
+        .nav-item.open > .nav-link .arrow {
+            transform: rotate(180deg);
+        }
+
+        /* Submenu (Dropdown) */
+        .submenu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            min-width: 220px;
+            background-color: var(--bg-color);
+            box-shadow: var(--shadow-lg);
+            border-radius: 0 0 8px 8px;
+            list-style: none;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: opacity var(--transition-normal), 
+                        transform var(--transition-normal), 
+                        visibility var(--transition-normal);
+            z-index: 100;
+        }
+
+        .nav-item.open > .submenu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .submenu-item {
+            position: relative;
+        }
+
+        .submenu-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            text-decoration: none;
+            color: var(--text-color);
+            font-size: 0.95rem;
+            transition: background-color var(--transition-fast), color var(--transition-fast);
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .submenu-link:hover,
+        .submenu-link:focus {
+            background-color: var(--bg-secondary);
+            color: var(--primary-color);
+        }
+
+        .submenu-link:focus {
+            outline: 2px solid var(--accent-color);
+            outline-offset: -2px;
+        }
+
+        .submenu-item:last-child .submenu-link {
+            border-radius: 0 0 8px 8px;
+        }
+
+        /* Nested Submenu (Third Level) */
+        .nested-submenu {
+            position: absolute;
+            top: 0;
+            left: 100%;
+            min-width: 200px;
+            background-color: var(--bg-color);
+            box-shadow: var(--shadow-lg);
+            border-radius: 8px;
+            list-style: none;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(-10px);
+            transition: opacity var(--transition-normal), 
+                        transform var(--transition-normal), 
+                        visibility var(--transition-normal);
+        }
+
+        .submenu-item.open > .nested-submenu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+        }
+
+        .nested-submenu .submenu-link {
+            border-radius: 0;
+        }
+
+        .nested-submenu .submenu-item:first-child .submenu-link {
+            border-radius: 8px 8px 0 0;
+        }
+
+        .nested-submenu .submenu-item:last-child .submenu-link {
+            border-radius: 0 0 8px 8px;
+        }
+
+        /* Arrow for nested items */
+        .submenu-link .nested-arrow {
+            width: 0;
+            height: 0;
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
+            border-left: 5px solid currentColor;
+            transition: transform var(--transition-normal);
+        }
+
+        .submenu-item.open > .submenu-link .nested-arrow {
+            transform: rotate(90deg);
+        }
+
+        /* Screen reader only text */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Demo Content Area */
+        .main-content {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: var(--bg-color);
+            border-radius: 8px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .main-content h1 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .main-content p {
+            color: var(--text-light);
+            margin-bottom: 1rem;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-top: 1.5rem;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .feature-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        /* Keyboard Navigation Indicator */
+        .keyboard-hint {
+            background-color: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1.5rem;
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .keyboard-hint h3 {
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .keyboard-hint kbd {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.2rem 0.5rem;
+            font-family: monospace;
+            font-size: 0.9rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+            }
+
+            .main-nav {
+                position: fixed;
+                top: 0;
+                left: -100%;
+                width: 80%;
+                max-width: 300px;
+                height: 100vh;
+                background-color: var(--bg-color);
+                box-shadow: var(--shadow-lg);
+                transition: left var(--transition-normal);
+                overflow-y: auto;
+                padding-top: 4rem;
+            }
+
+            .main-nav.active {
+                left: 0;
+            }
+
+            .nav-menu {
+                flex-direction: column;
+            }
+
+            .nav-link {
+                padding: 1rem 1.5rem;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            /* Mobile Submenu Styles */
+            .submenu,
+            .nested-submenu {
+                position: static;
+                opacity: 1;
+                visibility: hidden;
+                transform: none;
+                box-shadow: none;
+                border-radius: 0;
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height var(--transition-normal), visibility var(--transition-normal);
+                background-color: var(--bg-secondary);
+            }
+
+            .nav-item.open > .submenu,
+            .submenu-item.open > .nested-submenu {
+                visibility: visible;
+                max-height: 500px;
+            }
+
+            .submenu-link {
+                padding-left: 2rem;
+            }
+
+            .nested-submenu .submenu-link {
+                padding-left: 3rem;
+            }
+
+            .submenu-item:last-child .submenu-link,
+            .nested-submenu .submenu-item:first-child .submenu-link,
+            .nested-submenu .submenu-item:last-child .submenu-link {
+                border-radius: 0;
+            }
+
+            /* Mobile Overlay */
+            .nav-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 999;
+            }
+
+            .nav-overlay.active {
+                display: block;
+            }
+
+            .main-content {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+        }
+
+        /* Focus visible for better accessibility */
+        .nav-link:focus-visible,
+        .submenu-link:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: -2px;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="nav-container">
+            <a href="#" class="logo">Travel Agency</a>
+            
+            <button class="menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
+            <div class="nav-overlay"></div>
+
+            <nav class="main-nav" role="navigation" aria-label="Main navigation">
+                <ul class="nav-menu" role="menubar">
+                    <li class="nav-item" role="none">
+                        <a href="#" class="nav-link" role="menuitem">Home</a>
+                    </li>
+                    
+                    <li class="nav-item has-submenu" role="none">
+                        <button class="nav-link" 
+                                role="menuitem" 
+                                aria-haspopup="true" 
+                                aria-expanded="false">
+                            Tours
+                            <span class="arrow" aria-hidden="true"></span>
+                        </button>
+                        <ul class="submenu" role="menu" aria-label="Tours submenu">
+                            <li class="submenu-item has-nested" role="none">
+                                <button class="submenu-link" 
+                                        role="menuitem" 
+                                        aria-haspopup="true" 
+                                        aria-expanded="false">
+                                    European Tours
+                                    <span class="nested-arrow" aria-hidden="true"></span>
+                                </button>
+                                <ul class="nested-submenu" role="menu" aria-label="European Tours submenu">
+                                    <li class="submenu-item" role="none">
+                                        <a href="#" class="submenu-link" role="menuitem">France</a>
+                                    </li>
+                                    <li class="submenu-item" role="none">
+                                        <a href="#" class="submenu-link" role="menuitem">Italy</a>
+                                    </li>
+                                    <li class="submenu-item" role="none">
+                                        <a href="#" class="submenu-link" role="menuitem">Spain</a>
+                                    </li>
+                                    <li class="submenu-item" role="none">
+                                        <a href="#" class="submenu-link" role="menuitem">Greece</a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="submenu-item has-nested" role="none">
+                                <button class="submenu-link" 
+                                        role="menuitem" 
+                                        aria-haspopup="true" 
+                                        aria-expanded="false">
+                                    UK Tours
+                                    <span class="nested-arrow" aria-hidden="true"></span>
+                                </button>
+                                <ul class="nested-submenu" role="menu" aria-label="UK Tours submenu">
+                                    <li class="submenu-item" role="none">
+                                        <a href="#" class="submenu-link" role="menuitem">London</a>
+                                    </li>
+                                    <li class="submenu-item" role="none">
+                                        <a href="#" class="submenu-link" role="menuitem">Scotland</a>
+                                    </li>
+                                    <li class="submenu-item" role="none">
+                                        <a href="#" class="submenu-link" role="menuitem">Wales</a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="submenu-item" role="none">
+                                <a href="#" class="submenu-link" role="menuitem">Asia Tours</a>
+                            </li>
+                            <li class="submenu-item" role="none">
+                                <a href="#" class="submenu-link" role="menuitem">Private Tours</a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item has-submenu" role="none">
+                        <button class="nav-link" 
+                                role="menuitem" 
+                                aria-haspopup="true" 
+                                aria-expanded="false">
+                            Services
+                            <span class="arrow" aria-hidden="true"></span>
+                        </button>
+                        <ul class="submenu" role="menu" aria-label="Services submenu">
+                            <li class="submenu-item" role="none">
+                                <a href="#" class="submenu-link" role="menuitem">Airport Transfers</a>
+                            </li>
+                            <li class="submenu-item" role="none">
+                                <a href="#" class="submenu-link" role="menuitem">Vehicle Hire</a>
+                            </li>
+                            <li class="submenu-item" role="none">
+                                <a href="#" class="submenu-link" role="menuitem">Chauffeur Service</a>
+                            </li>
+                            <li class="submenu-item" role="none">
+                                <a href="#" class="submenu-link" role="menuitem">Concierge</a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item has-submenu" role="none">
+                        <button class="nav-link" 
+                                role="menuitem" 
+                                aria-haspopup="true" 
+                                aria-expanded="false">
+                            About
+                            <span class="arrow" aria-hidden="true"></span>
+                        </button>
+                        <ul class="submenu" role="menu" aria-label="About submenu">
+                            <li class="submenu-item" role="none">
+                                <a href="#" class="submenu-link" role="menuitem">Our Story</a>
+                            </li>
+                            <li class="submenu-item" role="none">
+                                <a href="#" class="submenu-link" role="menuitem">Team</a>
+                            </li>
+                            <li class="submenu-item" role="none">
+                                <a href="#" class="submenu-link" role="menuitem">Testimonials</a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item" role="none">
+                        <a href="#" class="nav-link" role="menuitem">Contact</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <h1>Click-to-Expand Navigation Menu</h1>
+        <p>This navigation menu demonstrates a click-based interaction pattern that prevents accidental openings during mouse movements. Subcategories remain closed by default and only expand when explicitly clicked.</p>
+        
+        <ul class="feature-list">
+            <li>Subcategories closed by default</li>
+            <li>Expands only on click, not hover</li>
+            <li>Quick, smooth CSS transitions (250ms)</li>
+            <li>Prevents accidental openings during mouse movements</li>
+            <li>Full keyboard navigation support</li>
+            <li>ARIA attributes for screen reader accessibility</li>
+            <li>Responsive mobile design with hamburger menu</li>
+            <li>Click outside to close open menus</li>
+            <li>Escape key closes all menus</li>
+        </ul>
+
+        <div class="keyboard-hint">
+            <h3>Keyboard Navigation</h3>
+            <p>
+                <kbd>Tab</kbd> - Navigate between menu items<br>
+                <kbd>Enter</kbd> / <kbd>Space</kbd> - Open/close submenu or activate link<br>
+                <kbd>↑</kbd> <kbd>↓</kbd> - Navigate within submenu<br>
+                <kbd>←</kbd> <kbd>→</kbd> - Navigate between top-level items or nested menus<br>
+                <kbd>Escape</kbd> - Close current submenu or all menus
+            </p>
+        </div>
+    </main>
+
+    <script>
+        /**
+         * Responsive Navigation Menu
+         * Features:
+         * - Click-to-expand (no hover)
+         * - Keyboard navigation
+         * - Accessibility support
+         * - Mobile responsive
+         */
+        (function() {
+            'use strict';
+
+            // DOM Elements
+            const menuToggle = document.querySelector('.menu-toggle');
+            const mainNav = document.querySelector('.main-nav');
+            const navOverlay = document.querySelector('.nav-overlay');
+            const navItems = document.querySelectorAll('.nav-item.has-submenu');
+            const submenuItems = document.querySelectorAll('.submenu-item.has-nested');
+
+            // State
+            let isMobile = window.innerWidth <= 768;
+
+            /**
+             * Toggle mobile menu
+             */
+            function toggleMobileMenu() {
+                const isOpen = menuToggle.classList.toggle('active');
+                mainNav.classList.toggle('active');
+                navOverlay.classList.toggle('active');
+                menuToggle.setAttribute('aria-expanded', isOpen);
+                
+                // Prevent body scroll when menu is open
+                document.body.style.overflow = isOpen ? 'hidden' : '';
+            }
+
+            /**
+             * Close mobile menu
+             */
+            function closeMobileMenu() {
+                menuToggle.classList.remove('active');
+                mainNav.classList.remove('active');
+                navOverlay.classList.remove('active');
+                menuToggle.setAttribute('aria-expanded', 'false');
+                document.body.style.overflow = '';
+            }
+
+            /**
+             * Toggle submenu for a nav item
+             * @param {HTMLElement} item - The nav item to toggle
+             * @param {boolean} forceClose - Force close the submenu
+             */
+            function toggleSubmenu(item, forceClose = false) {
+                const button = item.querySelector(':scope > button, :scope > .nav-link[aria-haspopup]');
+                const isOpen = item.classList.contains('open');
+
+                if (forceClose || isOpen) {
+                    item.classList.remove('open');
+                    if (button) {
+                        button.setAttribute('aria-expanded', 'false');
+                    }
+                    // Close all nested submenus
+                    const nestedItems = item.querySelectorAll('.open');
+                    nestedItems.forEach(nested => {
+                        nested.classList.remove('open');
+                        const nestedButton = nested.querySelector('button');
+                        if (nestedButton) {
+                            nestedButton.setAttribute('aria-expanded', 'false');
+                        }
+                    });
+                } else {
+                    // Close sibling menus first
+                    const siblings = item.parentElement.querySelectorAll(':scope > .open');
+                    siblings.forEach(sibling => {
+                        if (sibling !== item) {
+                            toggleSubmenu(sibling, true);
+                        }
+                    });
+                    
+                    item.classList.add('open');
+                    if (button) {
+                        button.setAttribute('aria-expanded', 'true');
+                    }
+                }
+            }
+
+            /**
+             * Close all submenus
+             */
+            function closeAllSubmenus() {
+                document.querySelectorAll('.nav-item.open, .submenu-item.open').forEach(item => {
+                    toggleSubmenu(item, true);
+                });
+            }
+
+            /**
+             * Handle click on nav items with submenus
+             * @param {Event} event - Click event
+             */
+            function handleNavItemClick(event) {
+                const target = event.target.closest('.nav-link, .submenu-link');
+                if (!target) return;
+
+                const parentItem = target.closest('.nav-item.has-submenu, .submenu-item.has-nested');
+                if (!parentItem) return;
+
+                // Only handle if it's a button (has submenu)
+                if (target.tagName === 'BUTTON' || target.hasAttribute('aria-haspopup')) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    toggleSubmenu(parentItem);
+                }
+            }
+
+            /**
+             * Handle keyboard navigation
+             * @param {KeyboardEvent} event - Keyboard event
+             */
+            function handleKeyboardNav(event) {
+                const target = event.target;
+                const key = event.key;
+                const parentItem = target.closest('.nav-item, .submenu-item');
+                
+                if (!parentItem) return;
+
+                switch (key) {
+                    case 'Enter':
+                    case ' ':
+                        if (target.hasAttribute('aria-haspopup')) {
+                            event.preventDefault();
+                            toggleSubmenu(parentItem);
+                            // Focus first item in submenu
+                            if (parentItem.classList.contains('open')) {
+                                const firstLink = parentItem.querySelector('.submenu-link, .nested-submenu .submenu-link');
+                                if (firstLink) {
+                                    setTimeout(() => firstLink.focus(), 50);
+                                }
+                            }
+                        }
+                        break;
+
+                    case 'Escape':
+                        event.preventDefault();
+                        if (parentItem.classList.contains('open')) {
+                            toggleSubmenu(parentItem, true);
+                            target.focus();
+                        } else {
+                            // Close parent menu
+                            const openParent = target.closest('.nav-item.open, .submenu-item.open');
+                            if (openParent) {
+                                const parentButton = openParent.querySelector(':scope > button, :scope > .nav-link');
+                                toggleSubmenu(openParent, true);
+                                if (parentButton) parentButton.focus();
+                            } else {
+                                closeAllSubmenus();
+                                if (isMobile) closeMobileMenu();
+                            }
+                        }
+                        break;
+
+                    case 'ArrowDown':
+                        event.preventDefault();
+                        navigateItems(target, 'next');
+                        break;
+
+                    case 'ArrowUp':
+                        event.preventDefault();
+                        navigateItems(target, 'prev');
+                        break;
+
+                    case 'ArrowRight':
+                        event.preventDefault();
+                        if (parentItem.classList.contains('has-nested') || parentItem.classList.contains('has-submenu')) {
+                            if (!parentItem.classList.contains('open')) {
+                                toggleSubmenu(parentItem);
+                            }
+                            const firstLink = parentItem.querySelector('.submenu-link');
+                            if (firstLink) {
+                                setTimeout(() => firstLink.focus(), 50);
+                            }
+                        } else {
+                            // Move to next top-level item
+                            navigateTopLevel(target, 'next');
+                        }
+                        break;
+
+                    case 'ArrowLeft':
+                        event.preventDefault();
+                        const openParent = target.closest('.submenu-item.open, .nav-item.open');
+                        if (openParent && target.closest('.submenu, .nested-submenu')) {
+                            const parentButton = openParent.querySelector(':scope > button, :scope > .nav-link');
+                            toggleSubmenu(openParent, true);
+                            if (parentButton) parentButton.focus();
+                        } else {
+                            navigateTopLevel(target, 'prev');
+                        }
+                        break;
+
+                    case 'Tab':
+                        // Allow default tab behavior but close menus when leaving
+                        setTimeout(() => {
+                            if (!mainNav.contains(document.activeElement)) {
+                                closeAllSubmenus();
+                            }
+                        }, 0);
+                        break;
+                }
+            }
+
+            /**
+             * Navigate between items
+             * @param {HTMLElement} current - Current focused element
+             * @param {string} direction - 'next' or 'prev'
+             */
+            function navigateItems(current, direction) {
+                const menu = current.closest('.nav-menu, .submenu, .nested-submenu');
+                if (!menu) return;
+
+                const items = Array.from(menu.querySelectorAll(':scope > li > a, :scope > li > button'));
+                const currentIndex = items.indexOf(current);
+                let nextIndex;
+
+                if (direction === 'next') {
+                    nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+                } else {
+                    nextIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+                }
+
+                items[nextIndex]?.focus();
+            }
+
+            /**
+             * Navigate between top-level menu items
+             * @param {HTMLElement} current - Current focused element
+             * @param {string} direction - 'next' or 'prev'
+             */
+            function navigateTopLevel(current, direction) {
+                const navMenu = document.querySelector('.nav-menu');
+                const topItems = Array.from(navMenu.querySelectorAll(':scope > li > a, :scope > li > button'));
+                
+                // Find current top-level item
+                const currentTopItem = current.closest('.nav-item');
+                const currentTopLink = currentTopItem?.querySelector(':scope > a, :scope > button');
+                const currentIndex = topItems.indexOf(currentTopLink);
+
+                if (currentIndex === -1) return;
+
+                let nextIndex;
+                if (direction === 'next') {
+                    nextIndex = currentIndex < topItems.length - 1 ? currentIndex + 1 : 0;
+                } else {
+                    nextIndex = currentIndex > 0 ? currentIndex - 1 : topItems.length - 1;
+                }
+
+                closeAllSubmenus();
+                topItems[nextIndex]?.focus();
+            }
+
+            /**
+             * Handle click outside menu to close
+             * @param {Event} event - Click event
+             */
+            function handleClickOutside(event) {
+                if (!mainNav.contains(event.target) && !menuToggle.contains(event.target)) {
+                    closeAllSubmenus();
+                    if (isMobile) closeMobileMenu();
+                }
+            }
+
+            /**
+             * Handle window resize
+             */
+            function handleResize() {
+                const wasMobile = isMobile;
+                isMobile = window.innerWidth <= 768;
+
+                if (wasMobile !== isMobile) {
+                    closeAllSubmenus();
+                    closeMobileMenu();
+                }
+            }
+
+            // Event Listeners
+            menuToggle.addEventListener('click', toggleMobileMenu);
+            navOverlay.addEventListener('click', closeMobileMenu);
+            document.addEventListener('click', handleClickOutside);
+            
+            // Click handlers for nav items
+            mainNav.addEventListener('click', handleNavItemClick);
+            
+            // Keyboard navigation
+            mainNav.addEventListener('keydown', handleKeyboardNav);
+            
+            // Window resize
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(handleResize, 100);
+            });
+
+            // Initial setup
+            handleResize();
+        })();
+    </script>
+</body>
+</html>

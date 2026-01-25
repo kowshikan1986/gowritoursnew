@@ -370,72 +370,38 @@ const Navigation = ({ isMobileMenuOpen, onClose }) => {
     }
   }, []);
 
-  // Delayed dropdown open function with hysteresis
-  const handleMouseEnterNav = useCallback((categorySlug, hasDropdown) => {
-    if (window.innerWidth > 768 && hasDropdown) {
-      // Clear any pending close timeout
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current);
-        closeTimeoutRef.current = null;
-      }
-      // Add delay before opening (280ms for smooth feel)
-      hoverTimeoutRef.current = setTimeout(() => {
-        setOpenSlug(categorySlug);
-      }, 280);
+  // Click-based toggle for dropdown (no hover)
+  const handleToggleDropdown = useCallback((categorySlug, hasDropdown, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
     }
-  }, []);
-
-  // Handle mouse leave with delay to prevent flicker
-  const handleMouseLeaveNav = useCallback(() => {
-    if (window.innerWidth > 768) {
-      // Clear any pending open timeout
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current);
-        hoverTimeoutRef.current = null;
-      }
-      // Longer delay before closing (250ms) to allow movement between items
-      closeTimeoutRef.current = setTimeout(() => {
+    if (hasDropdown) {
+      // Toggle: close if already open, open if closed
+      if (openSlug === categorySlug) {
         setOpenSlug(null);
         setExpandedSubSlug(null);
-      }, 250);
-    }
-  }, []);
-
-  // Keep dropdown open when hovering over it
-  const handleMouseEnterDropdown = useCallback(() => {
-    if (closeTimeoutRef.current) {
-      clearTimeout(closeTimeoutRef.current);
-      closeTimeoutRef.current = null;
-    }
-  }, []);
-
-  // Handle L2 hover with delay to prevent flicker
-  const handleL2Enter = useCallback((childSlug) => {
-    if (window.innerWidth > 768) {
-      // Clear any pending L2 close
-      if (l2TimeoutRef.current) {
-        clearTimeout(l2TimeoutRef.current);
-        l2TimeoutRef.current = null;
+      } else {
+        setOpenSlug(categorySlug);
+        setExpandedSubSlug(null);
       }
-      setExpandedSubSlug(childSlug);
     }
-  }, []);
+  }, [openSlug]);
 
-  // Handle L2 leave with delay - only close after delay
-  const handleL2Leave = useCallback(() => {
-    if (window.innerWidth > 768) {
-      l2TimeoutRef.current = setTimeout(() => {
-        // Check will be done on next hover
-      }, 200);
+  // Click-based toggle for L2 submenu (no hover)
+  const handleToggleL2 = useCallback((childSlug, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
     }
-  }, []);
+    // Toggle: close if already expanded, expand if closed
+    setExpandedSubSlug(expandedSubSlug === childSlug ? null : childSlug);
+  }, [expandedSubSlug]);
 
-  // Keep L2 open when hovering over L2 items
-  const handleL2ContainerEnter = useCallback(() => {
-    if (l2TimeoutRef.current) {
-      clearTimeout(l2TimeoutRef.current);
-      l2TimeoutRef.current = null;
-    }
+  // Close all menus
+  const closeAllMenus = useCallback(() => {
+    setOpenSlug(null);
+    setExpandedSubSlug(null);
   }, []);
 
   // Keyboard navigation handler
@@ -616,8 +582,6 @@ const Navigation = ({ isMobileMenuOpen, onClose }) => {
           return (
             <NavItem
               key={categorySlug}
-              onMouseEnter={() => handleMouseEnterNav(categorySlug, hasDropdown)}
-              onMouseLeave={handleMouseLeaveNav}
             >
               <NavLink
                 href={`/service/${categorySlug}`}
@@ -628,21 +592,15 @@ const Navigation = ({ isMobileMenuOpen, onClose }) => {
                 data-open={isOpen}
                 onClick={(e) => {
                   e.preventDefault();
-                  if (window.innerWidth <= 768) {
-                    if (hasDropdown) {
-                      const nextState = isOpen ? null : categorySlug;
-                      setOpenSlug(nextState);
-                      if (nextState === null) setExpandedSubSlug(null);
-                    } else {
-                      navigate(`/service/${categorySlug}`);
-                      setOpenSlug(null);
-                      setExpandedSubSlug(null);
-                      if (onClose) onClose();
-                    }
+                  e.stopPropagation();
+                  if (hasDropdown) {
+                    // Click toggles the dropdown on both mobile and desktop
+                    handleToggleDropdown(categorySlug, hasDropdown);
                   } else {
+                    // Navigate directly if no dropdown
                     navigate(`/service/${categorySlug}`);
-                    setOpenSlug(null);
-                    setExpandedSubSlug(null);
+                    closeAllMenus();
+                    if (onClose) onClose();
                   }
                 }}
                 onKeyDown={(e) => handleKeyDown(e, categorySlug, hasDropdown, directChildren)}
@@ -662,8 +620,6 @@ const Navigation = ({ isMobileMenuOpen, onClose }) => {
                     initial="hidden"
                     animate="visible"
                     exit="exit"
-                    onMouseEnter={handleMouseEnterDropdown}
-                    onMouseLeave={handleMouseLeaveNav}
                   >
                     <DropdownHeader>
                       <DropdownTitle>{label}</DropdownTitle>
@@ -719,25 +675,21 @@ const Navigation = ({ isMobileMenuOpen, onClose }) => {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 if (hasGrandchildren) {
-                                  setExpandedSubSlug(isExpanded ? null : childSlug);
+                                  handleToggleL2(childSlug);
                                 } else {
                                   navigate(`/service/${l2TargetSlug}`);
-                                  setOpenSlug(null);
-                                  setExpandedSubSlug(null);
+                                  closeAllMenus();
                                   if (onClose) onClose();
                                 }
                               }}
-                              onMouseEnter={() => handleL2Enter(childSlug)}
-                              onMouseLeave={handleL2Leave}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === ' ') {
                                   e.preventDefault();
                                   if (hasGrandchildren) {
-                                    setExpandedSubSlug(isExpanded ? null : childSlug);
+                                    handleToggleL2(childSlug);
                                   } else {
                                     navigate(`/service/${l2TargetSlug}`);
-                                    setOpenSlug(null);
-                                    setExpandedSubSlug(null);
+                                    closeAllMenus();
                                     if (onClose) onClose();
                                   }
                                 }
@@ -753,8 +705,6 @@ const Navigation = ({ isMobileMenuOpen, onClose }) => {
                                   initial="hidden"
                                   animate="visible"
                                   exit="exit"
-                                  onMouseEnter={handleL2ContainerEnter}
-                                  onMouseLeave={handleL2Leave}
                                   role="group"
                                   aria-label={`${child.name} subcategories`}
                                 >
@@ -777,16 +727,14 @@ const Navigation = ({ isMobileMenuOpen, onClose }) => {
                                           e.preventDefault();
                                           e.stopPropagation();
                                           navigate(`/service/${targetSlug}`);
-                                          setOpenSlug(null);
-                                          setExpandedSubSlug(null);
+                                          closeAllMenus();
                                           if (onClose) onClose();
                                         }}
                                         onKeyDown={(e) => {
                                           if (e.key === 'Enter' || e.key === ' ') {
                                             e.preventDefault();
                                             navigate(`/service/${targetSlug}`);
-                                            setOpenSlug(null);
-                                            setExpandedSubSlug(null);
+                                            closeAllMenus();
                                             if (onClose) onClose();
                                           }
                                         }}

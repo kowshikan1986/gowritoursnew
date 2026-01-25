@@ -12,6 +12,7 @@ import ServicePage from './pages/ServicePage';
 import PackageDetailPage from './pages/PackageDetailPage';
 import AdminDashboard from './pages/AdminDashboard';
 import CategoryEditPage from './pages/CategoryEditPage';
+import TermsPage from './pages/TermsPage';
 import { fetchFrontendData } from './services/frontendData';
 
 const AppContainer = styled.div`
@@ -71,6 +72,7 @@ function AppContent() {
           <Route path="/service/:id" element={<ServicePage />} />
           <Route path="/package/:id" element={<PackageDetailPage />} />
           <Route path="/contact-us" element={<ContactUs />} />
+          <Route path="/terms" element={<TermsPage />} />
           <Route path="/destinations" element={<Destinations />} />
           <Route path="/accommodation" element={<Accommodation />} />
           <Route path="/admin" element={<AdminDashboard />} />

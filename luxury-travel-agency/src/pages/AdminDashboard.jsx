@@ -11,6 +11,8 @@ import {
   getHeroBanners,
   getLogos,
   getAds,
+  getSettings,
+  updateSettings,
   createTour,
   updateTour,
   deleteTour,
@@ -176,6 +178,7 @@ const sections = [
   { key: 'hero', label: 'Hero Banners' },
   { key: 'ads', label: 'Ads' },
   { key: 'logos', label: 'Logos' },
+  { key: 'settings', label: 'Settings' },
 ];
 
 const AdminDashboard = () => {
@@ -205,6 +208,9 @@ const AdminDashboard = () => {
   const [banners, setBanners] = useState([]);
   const [ads, setAds] = useState([]);
   const [logos, setLogos] = useState([]);
+  const [settings, setSettings] = useState({ termsAndConditions: '', privacyPolicy: '' });
+  const [settingsForm, setSettingsForm] = useState({ termsAndConditions: '', privacyPolicy: '' });
+  const [settingsSaving, setSettingsSaving] = useState(false);
 
   const [tourForm, setTourForm] = useState({
     title: '',
@@ -470,6 +476,13 @@ const AdminDashboard = () => {
       } else if (key === 'logos') {
         const allLogos = await getLogos();
         setLogos(allLogos);
+      } else if (key === 'settings') {
+        const settingsData = await getSettings();
+        setSettings(settingsData);
+        setSettingsForm({
+          termsAndConditions: settingsData.termsAndConditions || '',
+          privacyPolicy: settingsData.privacyPolicy || '',
+        });
       }
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -1005,6 +1018,23 @@ const AdminDashboard = () => {
       setError(err.message || 'Unable to delete subcategory');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    setError('');
+    setSettingsSaving(true);
+    try {
+      const updatedSettings = await updateSettings({
+        termsAndConditions: settingsForm.termsAndConditions,
+        privacyPolicy: settingsForm.privacyPolicy,
+      });
+      setSettings(updatedSettings);
+      alert('Settings saved successfully!');
+    } catch (err) {
+      setError(err.message || 'Unable to save settings');
+    } finally {
+      setSettingsSaving(false);
     }
   };
 
@@ -2697,6 +2727,42 @@ const AdminDashboard = () => {
             ))}
           </List>
           {!logos.length && <Info>No logos yet.</Info>}
+        </Card>
+      )}
+
+      {user && dbInitialized && active === 'settings' && (
+        <Card>
+          <h3>Website Settings</h3>
+          <Info style={{ marginBottom: '1.5rem' }}>
+            Manage Terms & Conditions and other website content that appears on public pages.
+          </Info>
+          
+          <Field style={{ marginBottom: '2rem' }}>
+            <Label style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Terms & Conditions</Label>
+            <Info style={{ marginBottom: '0.5rem', fontSize: '0.85rem' }}>
+              This content will be displayed on the Terms & Conditions page (/terms). Use HTML formatting.
+            </Info>
+            <RichTextEditor
+              value={settingsForm.termsAndConditions}
+              onChange={(content) => setSettingsForm({ ...settingsForm, termsAndConditions: content })}
+            />
+          </Field>
+          
+          <Flex style={{ justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+            <Button 
+              onClick={handleSaveSettings} 
+              disabled={settingsSaving}
+              style={{ minWidth: '150px' }}
+            >
+              {settingsSaving ? 'Saving...' : 'Save Settings'}
+            </Button>
+          </Flex>
+          
+          {settings.termsUpdatedAt && (
+            <Info style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#6b7280' }}>
+              Last updated: {new Date(settings.termsUpdatedAt).toLocaleString()}
+            </Info>
+          )}
         </Card>
       )}
       </>
