@@ -1022,6 +1022,41 @@ const PackageDetailPage = () => {
           // Reset active package when loading new tour
           setActivePackage(0);
           
+          // Determine first available tab with content
+          const hasOverview = 
+            (details.tourOverview && details.tourOverview.length > 0) ||
+            (details.highlights && details.highlights.length > 0) ||
+            (details.priceIncludes && details.priceIncludes.length > 0) ||
+            (details.priceExcludes && details.priceExcludes.length > 0) ||
+            (details.starDifference && details.starDifference.length > 0) ||
+            (details.hotels && details.hotels.trim().length > 0) ||
+            (details.additionalExcursions && details.additionalExcursions.length > 0) ||
+            (details.importantNotes && details.importantNotes.trim().length > 0);
+          const hasItinerary = 
+            (details.itinerary && details.itinerary.length > 0) ||
+            (details.detailedItinerary && details.detailedItinerary.trim().length > 0);
+          const hasDates = details.tourDates && details.tourDates.length > 0;
+          const hasOtherInfo = 
+            (details.otherInfo && details.otherInfo.length > 0) ||
+            (details.termsAndConditions && details.termsAndConditions.length > 0);
+          const hasPickup = details.pickupPoints && (
+            (typeof details.pickupPoints === 'string' && details.pickupPoints.trim().length > 0) ||
+            (Array.isArray(details.pickupPoints) && details.pickupPoints.length > 0)
+          );
+          
+          // Set the first available tab
+          if (hasOverview) {
+            setActiveTab('overview');
+          } else if (hasItinerary) {
+            setActiveTab('itinerary');
+          } else if (hasDates) {
+            setActiveTab('dates');
+          } else if (hasOtherInfo) {
+            setActiveTab('otherinfo');
+          } else if (hasPickup) {
+            setActiveTab('pickup');
+          }
+          
           document.title = `${tour.title} | Luxury Travel Agency`;
           window.scrollTo(0, 0);
           setLoading(false);
@@ -1160,6 +1195,64 @@ const PackageDetailPage = () => {
             </motion.div>
           )}
           
+          {/* Early Bird Offer - Always visible outside tabs */}
+          {packageData.earlyBirdOffer && (
+            <OfferBanner style={{ marginBottom: '1.5rem' }}>
+              {packageData.earlyBirdOffer}
+            </OfferBanner>
+          )}
+          
+          {/* Advance Booking Offer - Always visible outside tabs */}
+          {packageData.advanceBookingOffer && (
+            <AdvanceBookingOfferWrapper
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              whileHover={{ 
+                scale: 1.02, 
+                boxShadow: "0 12px 40px rgba(16, 185, 129, 0.45), 0 0 80px rgba(16, 185, 129, 0.25)"
+              }}
+              whileTap={{ scale: 0.98 }}
+              style={{ marginBottom: '1.5rem' }}
+            >
+              {/* Animated sparkles */}
+              <SparkleIcon 
+                className="sparkle-1"
+                animate={{ opacity: [0.4, 1, 0.4], scale: [0.8, 1.2, 0.8], rotate: [0, 15, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >✨</SparkleIcon>
+              <SparkleIcon 
+                className="sparkle-2"
+                animate={{ opacity: [0.6, 1, 0.6], scale: [1, 1.3, 1], rotate: [0, -10, 0] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+              >⭐</SparkleIcon>
+              <SparkleIcon 
+                className="sparkle-3"
+                animate={{ opacity: [0.5, 1, 0.5], scale: [0.9, 1.2, 0.9] }}
+                transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+              >✨</SparkleIcon>
+              <SparkleIcon 
+                className="sparkle-4"
+                animate={{ opacity: [0.4, 1, 0.4], scale: [1, 1.4, 1], rotate: [0, 20, 0] }}
+                transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", delay: 0.9 }}
+              >💎</SparkleIcon>
+              
+              <AdvanceOfferContent>
+                <OfferIcon
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <CalendarIcon />
+                </OfferIcon>
+                
+                <OfferTextWrapper>
+                  <OfferLabel>Limited Time Offer</OfferLabel>
+                  <OfferText>{packageData.advanceBookingOffer}</OfferText>
+                </OfferTextWrapper>
+              </AdvanceOfferContent>
+            </AdvanceBookingOfferWrapper>
+          )}
+          
           <TabContainer>
             {/* Conditionally render Tour Overview tab only if overview data exists */}
             {(() => {
@@ -1279,63 +1372,6 @@ const PackageDetailPage = () => {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
               >
-                {/* Early Bird Offer */}
-                {packageData.earlyBirdOffer && (
-                  <OfferBanner>
-                    {packageData.earlyBirdOffer}
-                  </OfferBanner>
-                )}
-                
-                {/* Advance Booking Offer - Dynamic Animated Display */}
-                {packageData.advanceBookingOffer && (
-                  <AdvanceBookingOfferWrapper
-                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                    whileHover={{ 
-                      scale: 1.02, 
-                      boxShadow: "0 12px 40px rgba(16, 185, 129, 0.45), 0 0 80px rgba(16, 185, 129, 0.25)"
-                    }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {/* Animated sparkles */}
-                    <SparkleIcon 
-                      className="sparkle-1"
-                      animate={{ opacity: [0.4, 1, 0.4], scale: [0.8, 1.2, 0.8], rotate: [0, 15, 0] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                    >✨</SparkleIcon>
-                    <SparkleIcon 
-                      className="sparkle-2"
-                      animate={{ opacity: [0.6, 1, 0.6], scale: [1, 1.3, 1], rotate: [0, -10, 0] }}
-                      transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
-                    >⭐</SparkleIcon>
-                    <SparkleIcon 
-                      className="sparkle-3"
-                      animate={{ opacity: [0.5, 1, 0.5], scale: [0.9, 1.2, 0.9] }}
-                      transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
-                    >✨</SparkleIcon>
-                    <SparkleIcon 
-                      className="sparkle-4"
-                      animate={{ opacity: [0.4, 1, 0.4], scale: [1, 1.4, 1], rotate: [0, 20, 0] }}
-                      transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", delay: 0.9 }}
-                    >💎</SparkleIcon>
-                    
-                    <AdvanceOfferContent>
-                      <OfferIcon
-                        animate={{ rotate: [0, 10, -10, 0] }}
-                        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                      >
-                        <CalendarIcon />
-                      </OfferIcon>
-                      
-                      <OfferTextWrapper>
-                        <OfferLabel>Limited Time Offer</OfferLabel>
-                        <OfferText>{packageData.advanceBookingOffer}</OfferText>
-                      </OfferTextWrapper>
-                    </AdvanceOfferContent>
-                  </AdvanceBookingOfferWrapper>
-                )}
-                
                 <p style={{ marginBottom: '2rem', lineHeight: '1.6', color: '#666' }}>
                   {getActiveData('description') || packageData.description}
                 </p>
