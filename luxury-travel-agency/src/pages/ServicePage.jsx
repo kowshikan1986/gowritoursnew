@@ -1034,6 +1034,7 @@ const ServicePage = () => {
     'uk-tours',
     'european-tours',
     'world-tours',
+    'india-tours',
     'india-sri-lankan-tours',
     'sri-lanka-tours',
     'group-tours',
@@ -1351,35 +1352,84 @@ const ServicePage = () => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate form submission
-    setTimeout(() => {
-      setIsSubmitting(false);
-      alert('Thank you for your booking request! We will contact you within 24 hours.');
-      setBookingForm({
-        name: '',
-        email: '',
-        phone: '',
-        pickupLocation: '',
-        dropoffLocation: '',
-        transferService: '',
-        passengers: '',
-        vehicleType: '',
-        message: '',
-        pickupDate: '',
-        pickupTime: '',
-        pickupAddress1: '',
-        pickupAddress2: '',
-        pickupCity: '',
-        pickupPostcode: '',
-        dropoffSameAddress: '',
-        dropoffAddress1: '',
-        dropoffAddress2: '',
-        dropoffCity: '',
-        dropoffPostcode: '',
-        returnDate: '',
-        returnTime: ''
+    try {
+      // Determine if this is airport transfer or vehicle hire
+      const isAirportTransfer = normalize(id) === 'airport-transfers';
+      const formType = isAirportTransfer ? 'Airport Transfer Booking' : 'Vehicle Hire Booking';
+      
+      // Build the message with all booking details
+      const bookingDetails = `
+${formType} Request
+
+Name: ${bookingForm.name}
+Email: ${bookingForm.email}
+Phone: ${bookingForm.phone}
+
+${isAirportTransfer ? `Pickup - Airport/Town: ${bookingForm.pickupLocation}
+Drop-off: ${bookingForm.dropoffLocation}` : `Pickup Address: ${bookingForm.pickupAddress1}${bookingForm.pickupAddress2 ? ', ' + bookingForm.pickupAddress2 : ''}, ${bookingForm.pickupCity} ${bookingForm.pickupPostcode}
+Pickup Date: ${bookingForm.pickupDate}
+Pickup Time: ${bookingForm.pickupTime}`}
+
+Passengers: ${bookingForm.passengers}
+Vehicle Type: ${bookingForm.vehicleType}
+
+${!isAirportTransfer && bookingForm.returnDate ? `Return Date: ${bookingForm.returnDate}
+Return Time: ${bookingForm.returnTime}` : ''}
+
+Additional Message: ${bookingForm.message || 'None'}
+      `.trim();
+
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: bookingForm.name,
+          email: bookingForm.email,
+          phone: bookingForm.phone,
+          selectedPackage: formType,
+          message: bookingDetails
+        })
       });
-    }, 2000);
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        alert('Thank you for your booking request! We will contact you within 24 hours.');
+        setBookingForm({
+          name: '',
+          email: '',
+          phone: '',
+          pickupLocation: '',
+          dropoffLocation: '',
+          transferService: '',
+          passengers: '',
+          vehicleType: '',
+          message: '',
+          pickupDate: '',
+          pickupTime: '',
+          pickupAddress1: '',
+          pickupAddress2: '',
+          pickupCity: '',
+          pickupPostcode: '',
+          dropoffSameAddress: '',
+          dropoffAddress1: '',
+          dropoffAddress2: '',
+          dropoffCity: '',
+          dropoffPostcode: '',
+          returnDate: '',
+          returnTime: ''
+        });
+      } else {
+        alert(result.message || 'Failed to send booking request. Please try again or call us directly.');
+      }
+    } catch (error) {
+      console.error('Error submitting booking:', error);
+      alert('Failed to send booking request. Please try again or call us directly.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleBookingChange = (e) => {
@@ -1894,25 +1944,7 @@ const ServicePage = () => {
               </FormGroup>
 
               <FormGroup>
-                <FormLabel htmlFor="transferService">Service *</FormLabel>
-                <FormSelect
-                  id="transferService"
-                  name="transferService"
-                  value={bookingForm.transferService}
-                  onChange={handleBookingInputChange}
-                  required
-                >
-                  <option value="">Select service</option>
-                  {airportTransferCategories.map((subcat) => (
-                    <option key={subcat.id} value={subcat.id}>
-                      {subcat.name}
-                    </option>
-                  ))}
-                </FormSelect>
-              </FormGroup>
-
-              <FormGroup>
-                <FormLabel htmlFor="pickupLocation">Pickup *</FormLabel>
+                <FormLabel htmlFor="pickupLocation">Pickup - Airport/Town *</FormLabel>
                 <FormInput
                   type="text"
                   id="pickupLocation"

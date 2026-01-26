@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PhoneIcon, EnvelopeIcon, UserIcon, MapPinIcon, CheckCircleIcon, CalendarIcon, CurrencyPoundIcon } from '@heroicons/react/24/outline';
+import { PhoneIcon, EnvelopeIcon, UserIcon, MapPinIcon, CheckCircleIcon, CalendarIcon, CurrencyPoundIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { getCategories, getTours } from '../services/jsonDatabase';
 
 const Page = styled.div`
@@ -670,17 +670,15 @@ const ContactUs = () => {
               <IconWrap><PhoneIcon style={{ width: 20, height: 20 }} /></IconWrap>
               <InfoText>
                 <span>Telephone</span>
-                <strong>+44 20 8830 8611</strong>
-                <span>Main Office</span>
+                <strong>(+44) 208 830 8611</strong>
               </InfoText>
             </InfoItem>
 
             <InfoItem>
               <IconWrap><PhoneIcon style={{ width: 20, height: 20 }} /></IconWrap>
               <InfoText>
-                <span>Mobile</span>
-                <strong>07956 375 803</strong>
-                <span>24/7 Support</span>
+                <span>Mobile (8am – 6pm)</span>
+                <strong>+44 7956 375803</strong>
               </InfoText>
             </InfoItem>
 
@@ -692,6 +690,27 @@ const ContactUs = () => {
                 <span>Response within 24 hours</span>
               </InfoText>
             </InfoItem>
+
+            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                <IconWrap><ClockIcon style={{ width: 20, height: 20 }} /></IconWrap>
+                <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1a1a1a', margin: 0 }}>Opening Hours</h4>
+              </div>
+              <div style={{ marginLeft: '52px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: '#666', fontWeight: 500 }}>Monday – Friday</span>
+                  <strong style={{ color: '#1a1a1a' }}>8 am – 6 pm</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: '#666', fontWeight: 500 }}>Saturday</span>
+                  <strong style={{ color: '#1a1a1a' }}>9 am – 6 pm</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: '#666', fontWeight: 500 }}>Sunday</span>
+                  <strong style={{ color: '#1a1a1a' }}>10 am – 5 pm</strong>
+                </div>
+              </div>
+            </div>
           </AnimatedCard>
         </Grid>
       </Container>

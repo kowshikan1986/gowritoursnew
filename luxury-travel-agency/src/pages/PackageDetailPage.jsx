@@ -1408,10 +1408,10 @@ const PackageDetailPage = () => {
                   </div>
                 )}
 
-                {/* Tour Highlights */}
+                {/* Highlights */}
                 {getActiveData('highlights') && getActiveData('highlights').length > 0 && (
                   <div style={{ marginBottom: '2rem' }}>
-                    <SectionTitle><CheckCircleIcon /> Tour Highlights</SectionTitle>
+                    <SectionTitle><CheckCircleIcon /> Highlights</SectionTitle>
                     <HighlightList>
                       {getActiveData('highlights').map((highlight, index) => (
                         <HighlightItem key={index}>

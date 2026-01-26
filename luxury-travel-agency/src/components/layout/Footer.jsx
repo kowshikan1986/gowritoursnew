@@ -8,7 +8,6 @@ import {
   EnvelopeIcon,
   ClockIcon 
 } from '@heroicons/react/24/outline';
-import { servicesData } from '../../data/servicesData';
 import { fetchFrontendData } from '../../services/frontendData';
 
 const FooterContainer = styled.footer`
@@ -126,9 +125,10 @@ const FooterBottom = styled.div`
 
 const Footer = () => {
   const [rootCategories, setRootCategories] = useState([]);
+  const [featuredServices, setFeaturedServices] = useState([]);
 
   useEffect(() => {
-    // Load main categories for Quick Links
+    // Load main categories for Quick Links and Featured Services
     const loadCategories = async () => {
       try {
         const { allCategories } = await fetchFrontendData();
@@ -137,6 +137,16 @@ const Footer = () => {
           .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
           .slice(0, 6); // Show max 6 main categories
         setRootCategories(roots);
+        
+        // Featured Services - show main tour categories (subcategories of "Tours")
+        const toursCategory = (allCategories || []).find(c => c.slug === 'tours');
+        if (toursCategory) {
+          const tourSubcategories = (allCategories || [])
+            .filter(cat => cat.parent_id === toursCategory.id && cat.visible)
+            .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+            .slice(0, 6);
+          setFeaturedServices(tourSubcategories);
+        }
       } catch (error) {
         console.error('Error loading categories:', error);
       }
@@ -152,9 +162,6 @@ const Footer = () => {
     })),
     { name: 'Contact', path: '/contact-us' }
   ];
-
-  // Display first 6 services in footer to save space
-  const footerServices = servicesData.slice(0, 6);
 
   return (
     <FooterContainer>
@@ -209,10 +216,10 @@ const Footer = () => {
         >
           <h3>Featured Services</h3>
           <ul>
-            {footerServices.map((service) => (
+            {featuredServices.map((service) => (
               <li key={service.id}>
-                <Link to={`/service/${service.id}`}>
-                  {service.title}
+                <Link to={`/service/${service.slug || service.id}`}>
+                  {service.name}
                 </Link>
               </li>
             ))}
