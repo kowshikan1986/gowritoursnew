@@ -582,6 +582,23 @@ const Navigation = ({ isMobileMenuOpen, onClose }) => {
           return (
             <NavItem
               key={categorySlug}
+              onMouseEnter={() => {
+                // Show dropdown on hover for categories with children
+                if (hasDropdown) {
+                  clearAllTimeouts();
+                  hoverTimeoutRef.current = setTimeout(() => {
+                    setOpenSlug(categorySlug);
+                  }, 100);
+                }
+              }}
+              onMouseLeave={() => {
+                // Close dropdown when mouse leaves
+                clearAllTimeouts();
+                closeTimeoutRef.current = setTimeout(() => {
+                  setOpenSlug(null);
+                  setExpandedSubSlug(null);
+                }, 200);
+              }}
             >
               <NavLink
                 href={`/service/${categorySlug}`}
@@ -593,15 +610,10 @@ const Navigation = ({ isMobileMenuOpen, onClose }) => {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if (hasDropdown) {
-                    // Click toggles the dropdown on both mobile and desktop
-                    handleToggleDropdown(categorySlug, hasDropdown);
-                  } else {
-                    // Navigate directly if no dropdown
-                    navigate(`/service/${categorySlug}`);
-                    closeAllMenus();
-                    if (onClose) onClose();
-                  }
+                  // Always navigate to the service page on click
+                  navigate(`/service/${categorySlug}`);
+                  closeAllMenus();
+                  if (onClose) onClose();
                 }}
                 onKeyDown={(e) => handleKeyDown(e, categorySlug, hasDropdown, directChildren)}
                 whileHover={{ scale: 1.02 }}
@@ -771,7 +783,7 @@ const Navigation = ({ isMobileMenuOpen, onClose }) => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          Contact
+          Contact Us
         </NavLink>
       </NavItem>
 
@@ -779,7 +791,9 @@ const Navigation = ({ isMobileMenuOpen, onClose }) => {
         role="button"
         tabIndex={0}
         onClick={(e) => {
-          handleNavClick(e, 'contact');
+          e.preventDefault();
+          navigate('/contact-us');
+          closeAllMenus();
           if (onClose) onClose();
         }}
         whileHover={{ scale: 1.05 }}

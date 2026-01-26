@@ -145,6 +145,7 @@ const CategoryEditPage = () => {
     highlights: '',
     image: null,
     contentImage: null,
+    deleteContentImage: false,
   });
 
   useEffect(() => {
@@ -218,6 +219,7 @@ const CategoryEditPage = () => {
         highlights: form.highlights,
         imageFile: form.image,
         contentImageFile: form.contentImage,
+        deleteContentImage: form.deleteContentImage,
         parent_id: form.parent_id || null,
       });
       
@@ -373,10 +375,10 @@ const CategoryEditPage = () => {
             <Input
               type="file"
               accept="image/*"
-              onChange={(e) => setForm({ ...form, contentImage: e.target.files[0] })}
+              onChange={(e) => setForm({ ...form, contentImage: e.target.files[0], deleteContentImage: false })}
             />
-            <small style={{ color: '#666', display: 'block', marginTop: '4px' }}>Displayed next to "Experience Luxury" section</small>
-            {category.content_image && (
+            <small style={{ color: '#666', display: 'block', marginTop: '4px' }}>Displayed next to description. Leave empty for horizontal layout (description + highlights side by side).</small>
+            {category.content_image && !form.deleteContentImage && (
               <div style={{ marginTop: '0.5rem' }}>
                 <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>Current content image:</p>
                 <img
@@ -384,6 +386,47 @@ const CategoryEditPage = () => {
                   alt={`${category.name} content`}
                   style={{ width: '200px', height: 'auto', borderRadius: '8px', marginTop: '0.5rem' }}
                 />
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, deleteContentImage: true, contentImage: null })}
+                  style={{
+                    display: 'block',
+                    marginTop: '0.5rem',
+                    padding: '0.5rem 1rem',
+                    background: '#fee2e2',
+                    border: '1px solid #fca5a5',
+                    borderRadius: '6px',
+                    color: '#b91c1c',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    fontWeight: '600'
+                  }}
+                >
+                  🗑️ Delete Content Image
+                </button>
+              </div>
+            )}
+            {form.deleteContentImage && (
+              <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: '#fef3c7', borderRadius: '8px', border: '1px solid #fcd34d' }}>
+                <p style={{ fontSize: '0.875rem', color: '#92400e', margin: 0 }}>
+                  ⚠️ Content image will be removed on save. Page will show horizontal layout (description + highlights).
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, deleteContentImage: false })}
+                  style={{
+                    marginTop: '0.5rem',
+                    padding: '0.375rem 0.75rem',
+                    background: '#fff',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '4px',
+                    color: '#374151',
+                    cursor: 'pointer',
+                    fontSize: '0.75rem'
+                  }}
+                >
+                  Cancel deletion
+                </button>
               </div>
             )}
           </Field>

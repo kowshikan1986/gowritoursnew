@@ -1,0 +1,109 @@
+# Ubuntu Server 24.04 LTS base image
+FROM ubuntu:24.04
+
+# Set environment variables to prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+# Set application environment variables
+ENV PORT=3000
+ENV HOST=0.0.0.0
+ENV NODE_OPTIONS=--max-old-space-size=512
+
+# Update package lists and install essential packages
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+    # Essential build tools
+    build-essential \
+    # Version control
+    git \
+    # Network utilities
+    curl \
+    wget \
+    ca-certificates \
+    gnupg \
+    # Text editors
+    vim \
+    nano \
+    # Process management
+    htop \
+    procps \
+    # Archive utilities
+    zip \
+    unzip \
+    tar \
+    # Python (often needed for node-gyp)
+    python3 \
+    python3-pip \
+    # Database clients
+    postgresql-client \
+    sqlite3 \
+    # Networking tools
+    net-tools \
+    iputils-ping \
+    dnsutils \
+    # SSL/TLS
+    openssl \
+    libssl-dev \
+    # Other utilities
+    sudo \
+    locales \
+    tzdata \
+    software-properties-common \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set locale
+RUN locale-gen en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
+
+# Install Node.js 22.x LTS
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Verify Node.js and npm installation
+RUN node --version && npm --version
+
+# Create a non-root user for running the application
+RUN useradd -m -s /bin/bash appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files first for better Docker layer caching
+COPY package*.json ./
+
+# Install ALL dependencies (including devDependencies for build)
+RUN npm install --legacy-peer-deps
+
+# Copy application source code
+COPY . .
+
+# Build the application using the installed vite from node_modules
+RUN ./node_modules/.bin/vite build
+
+# Set production environment after build
+ENV NODE_ENV=production
+
+# Remove development dependencies after build is complete
+RUN npm prune --production --legacy-peer-deps
+
+# Create necessary directories
+RUN mkdir -p /app/data /app/logs /app/public/uploads
+
+# Change ownership to non-root user
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose the application port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:3000/health || exit 1
+
+# Start the application
+CMD ["node", "server-json.js"]

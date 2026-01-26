@@ -424,6 +424,187 @@ const OfferBanner = styled.div`
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 `;
 
+// Advanced Booking Offer - Dynamic animated component
+const AdvanceBookingOfferWrapper = styled(motion.div)`
+  position: relative;
+  margin-bottom: 2rem;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  
+  /* Animated gradient background */
+  background: linear-gradient(
+    135deg,
+    #10b981 0%,
+    #059669 25%,
+    #047857 50%,
+    #059669 75%,
+    #10b981 100%
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 8s ease infinite;
+  
+  /* Glow effect */
+  box-shadow: 
+    0 8px 32px rgba(16, 185, 129, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+    0 0 60px rgba(16, 185, 129, 0.2);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    );
+    animation: shimmer 3s infinite;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    padding: 2px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.1));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+  
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  
+  @keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+  
+  @media (max-width: 768px) {
+    border-radius: 12px;
+  }
+`;
+
+const AdvanceOfferContent = styled.div`
+  position: relative;
+  z-index: 1;
+  padding: 1.75rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  
+  @media (max-width: 768px) {
+    padding: 1.25rem 1rem;
+    flex-direction: column;
+    text-align: center;
+    gap: 0.75rem;
+  }
+`;
+
+const OfferIcon = styled(motion.div)`
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  
+  svg {
+    width: 26px;
+    height: 26px;
+    color: white;
+  }
+  
+  @media (max-width: 768px) {
+    width: 42px;
+    height: 42px;
+    
+    svg {
+      width: 22px;
+      height: 22px;
+    }
+  }
+`;
+
+const OfferTextWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+`;
+
+const OfferLabel = styled.span`
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+  
+  @media (max-width: 768px) {
+    font-size: 0.7rem;
+    letter-spacing: 1.5px;
+  }
+`;
+
+const OfferText = styled.span`
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  
+  @media (max-width: 768px) {
+    font-size: 1.1rem;
+  }
+`;
+
+const OfferBadge = styled(motion.div)`
+  background: rgba(255, 255, 255, 0.95);
+  color: #047857;
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  
+  @media (max-width: 768px) {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.7rem;
+  }
+`;
+
+const SparkleIcon = styled(motion.span)`
+  position: absolute;
+  font-size: 1.2rem;
+  pointer-events: none;
+  
+  &.sparkle-1 { top: 15%; left: 8%; }
+  &.sparkle-2 { top: 20%; right: 12%; }
+  &.sparkle-3 { bottom: 18%; left: 15%; }
+  &.sparkle-4 { bottom: 25%; right: 8%; }
+  
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
+`;
+
 const InfoBox = styled.div`
   background: #f3f4f6;
   padding: 1.5rem;
@@ -1004,7 +1185,7 @@ const PackageDetailPage = () => {
                   active={activeTab === 'overview'} 
                   onClick={() => setActiveTab('overview')}
                 >
-                  Tour Overview
+                  Overview
                 </TabButton>
               ) : null;
             })()}
@@ -1105,11 +1286,54 @@ const PackageDetailPage = () => {
                   </OfferBanner>
                 )}
                 
-                {/* Advance Booking Offer */}
+                {/* Advance Booking Offer - Dynamic Animated Display */}
                 {packageData.advanceBookingOffer && (
-                  <OfferBanner style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}>
-                    {packageData.advanceBookingOffer}
-                  </OfferBanner>
+                  <AdvanceBookingOfferWrapper
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    whileHover={{ 
+                      scale: 1.02, 
+                      boxShadow: "0 12px 40px rgba(16, 185, 129, 0.45), 0 0 80px rgba(16, 185, 129, 0.25)"
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {/* Animated sparkles */}
+                    <SparkleIcon 
+                      className="sparkle-1"
+                      animate={{ opacity: [0.4, 1, 0.4], scale: [0.8, 1.2, 0.8], rotate: [0, 15, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    >✨</SparkleIcon>
+                    <SparkleIcon 
+                      className="sparkle-2"
+                      animate={{ opacity: [0.6, 1, 0.6], scale: [1, 1.3, 1], rotate: [0, -10, 0] }}
+                      transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+                    >⭐</SparkleIcon>
+                    <SparkleIcon 
+                      className="sparkle-3"
+                      animate={{ opacity: [0.5, 1, 0.5], scale: [0.9, 1.2, 0.9] }}
+                      transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+                    >✨</SparkleIcon>
+                    <SparkleIcon 
+                      className="sparkle-4"
+                      animate={{ opacity: [0.4, 1, 0.4], scale: [1, 1.4, 1], rotate: [0, 20, 0] }}
+                      transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", delay: 0.9 }}
+                    >💎</SparkleIcon>
+                    
+                    <AdvanceOfferContent>
+                      <OfferIcon
+                        animate={{ rotate: [0, 10, -10, 0] }}
+                        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                      >
+                        <CalendarIcon />
+                      </OfferIcon>
+                      
+                      <OfferTextWrapper>
+                        <OfferLabel>Limited Time Offer</OfferLabel>
+                        <OfferText>{packageData.advanceBookingOffer}</OfferText>
+                      </OfferTextWrapper>
+                    </AdvanceOfferContent>
+                  </AdvanceBookingOfferWrapper>
                 )}
                 
                 <p style={{ marginBottom: '2rem', lineHeight: '1.6', color: '#666' }}>
@@ -1119,7 +1343,7 @@ const PackageDetailPage = () => {
                 {/* Tour Overview (boxed list) */}
                 {overviewBullets.length > 0 && (
                   <div style={{ marginBottom: '2rem' }}>
-                    <SectionTitle>Tour Overview</SectionTitle>
+                    <SectionTitle>Overview</SectionTitle>
                     <OverviewCard>
                       <HighlightList>
                         {overviewBullets.map((point, idx) => (
@@ -1136,7 +1360,7 @@ const PackageDetailPage = () => {
                 {/* Tour Overview points (plain list) */}
                 {getActiveData('tourOverview') && getActiveData('tourOverview').length > 0 && (
                   <div style={{ marginBottom: '2rem' }}>
-                    <SectionTitle><CheckCircleIcon /> Tour Overview</SectionTitle>
+                    <SectionTitle><CheckCircleIcon /> Overview</SectionTitle>
                     <HighlightList>
                       {getActiveData('tourOverview').map((highlight, index) => (
                         <HighlightItem key={index}>
@@ -1156,7 +1380,7 @@ const PackageDetailPage = () => {
                       {getActiveData('highlights').map((highlight, index) => (
                         <HighlightItem key={index}>
                           <CheckCircleIcon />
-                          {highlight}
+                          <span dangerouslySetInnerHTML={{ __html: highlight }} />
                         </HighlightItem>
                       ))}
                     </HighlightList>
@@ -1212,7 +1436,11 @@ const PackageDetailPage = () => {
                 {getActiveData('hotels') && (
                   <InfoBox>
                     <h4 style={{ marginBottom: '0.5rem', color: '#6A1B82' }}>🏨 Hotels / Accommodation</h4>
-                    <p style={{ margin: 0, color: '#4a4a4a' }}>{getActiveData('hotels')}</p>
+                    <div style={{ margin: 0, color: '#4a4a4a' }}>
+                      {getActiveData('hotels').split('\n').filter(line => line.trim()).map((hotel, idx) => (
+                        <p key={idx} style={{ margin: '0.3rem 0', lineHeight: '1.5' }}>{hotel.trim()}</p>
+                      ))}
+                    </div>
                   </InfoBox>
                 )}
                 
@@ -1531,7 +1759,7 @@ const PackageDetailPage = () => {
                 )}
               </motion.div>
             </AnimatePresence>
-            <BookButton to="/contact-us">Book This Tour</BookButton>
+            <BookButton to="/contact-us">Book now</BookButton>
             
             {/* Tour Gallery */}
             {packageData.galleryImages && packageData.galleryImages.length > 0 ? (

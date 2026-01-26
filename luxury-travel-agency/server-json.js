@@ -5,12 +5,34 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
 import fs from 'fs';
+import nodemailer from 'nodemailer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ==================== EMAIL CONFIGURATION ====================
+const EMAIL_CONFIG = {
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER || 'gowritour@gmail.com',
+    pass: process.env.EMAIL_PASS || 'uwkgbqbcrinnsiqw'
+  }
+};
+
+// Create reusable transporter
+const transporter = nodemailer.createTransport(EMAIL_CONFIG);
+
+// Verify email configuration on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.log('⚠️ Email configuration error:', error.message);
+  } else {
+    console.log('✅ Email server is ready to send messages');
+  }
+});
 
 // Middleware
 app.use(compression({ level: 9, threshold: 0 }));
@@ -263,7 +285,7 @@ app.put('/api/categories/:slug', (req, res) => {
       return res.status(404).json({ error: 'Category not found' });
     }
     
-    const { name, description, image, parent_id, visible, sort_order, highlights } = req.body;
+    const { name, description, image, content_image, delete_content_image, parent_id, visible, sort_order, highlights } = req.body;
     const current = db.categories[index];
     
     // Generate new slug from name if name is provided
@@ -273,11 +295,20 @@ app.put('/api/categories/:slug', (req, res) => {
     const imageToUse = (image !== undefined && image !== null && image !== '') ? image : current.image;
     const highlightsToUse = highlights !== undefined ? highlights : current.highlights;
     
+    // Handle content_image - can be deleted, updated, or kept
+    let contentImageToUse = current.content_image || '';
+    if (delete_content_image === true) {
+      contentImageToUse = ''; // Delete the content image
+    } else if (content_image !== undefined && content_image !== null) {
+      contentImageToUse = content_image; // Update with new image
+    }
+    
     db.categories[index] = {
       ...current,
       name: name !== undefined ? name : current.name,
       description: description !== undefined ? description : current.description,
       image: imageToUse,
+      content_image: contentImageToUse,
       parent_id: parent_id !== undefined ? parent_id : current.parent_id,
       visible: visible !== undefined ? visible : current.visible,
       sort_order: sort_order !== undefined ? sort_order : current.sort_order,
@@ -677,6 +708,112 @@ app.delete('/api/ads/:id', (req, res) => {
 // ==================== DATABASE EXPORT ====================
 
 // Export database as JSON file download
+// ==================== CONTACT FORM API ====================
+
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { name, email, phone, travelers, budget, travelDates, selectedPackage, interests, message } = req.body;
+    
+    // Validate required fields
+    if (!name || !email || !message) {
+      return res.status(400).json({ success: false, error: 'Name, email, and message are required.' });
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ success: false, error: 'Please provide a valid email address.' });
+    }
+    
+    // Sanitize inputs
+    const sanitize = (str) => String(str || '').replace(/[<>]/g, '');
+    
+    // Create inquiry object
+    const inquiry = {
+      id: Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9),
+      name: sanitize(name),
+      email: sanitize(email),
+      phone: sanitize(phone) || '',
+      travelers: sanitize(travelers) || '',
+      budget: sanitize(budget) || 'Not specified',
+      travelDates: sanitize(travelDates) || 'Flexible',
+      selectedPackage: sanitize(selectedPackage) || 'Not specified',
+      interests: sanitize(interests) || 'Not specified',
+      message: sanitize(message),
+      created_at: new Date().toISOString(),
+      status: 'new'
+    };
+    
+    // Store in database as backup
+    const db = readDB();
+    if (!db.inquiries) {
+      db.inquiries = [];
+    }
+    db.inquiries.unshift(inquiry);
+    writeDB(db);
+    
+    // Prepare email content
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #6A1B82; border-bottom: 2px solid #6A1B82; padding-bottom: 10px;">
+          New Travel Inquiry
+        </h2>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr><td style="padding: 8px 0; font-weight: bold; width: 140px;">Name:</td><td>${inquiry.name}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold;">Email:</td><td><a href="mailto:${inquiry.email}">${inquiry.email}</a></td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold;">Phone:</td><td>${inquiry.phone || 'Not provided'}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold;">Travelers:</td><td>${inquiry.travelers || 'Not specified'}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold;">Budget:</td><td>${inquiry.budget}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold;">Travel Dates:</td><td>${inquiry.travelDates}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold;">Package:</td><td>${inquiry.selectedPackage}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold;">Interests:</td><td>${inquiry.interests}</td></tr>
+        </table>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+          <strong>Message:</strong>
+          <p style="white-space: pre-wrap;">${inquiry.message}</p>
+        </div>
+        
+        <p style="margin-top: 20px; color: #888; font-size: 12px;">
+          Received: ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })}
+        </p>
+      </div>
+    `;
+    
+    // Send email
+    try {
+      await transporter.sendMail({
+        from: `"Gowri Tours Website" <${EMAIL_CONFIG.auth.user}>`,
+        to: 'gowritour@gmail.com',
+        replyTo: inquiry.email,
+        subject: `New Travel Inquiry from ${inquiry.name}`,
+        html: emailHtml
+      });
+      
+      console.log('✅ Inquiry email sent successfully');
+      res.json({ success: true, message: 'Thank you! Your inquiry has been sent.' });
+    } catch (emailError) {
+      console.error('⚠️ Email sending failed:', emailError.message);
+      res.json({ 
+        success: true, 
+        message: 'Thank you! Your inquiry has been received.',
+        note: 'Email notification pending'
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Error processing inquiry:', error.message);
+    res.status(500).json({ success: false, error: 'Failed to submit inquiry. Please try again.' });
+  }
+});
+
+// Get all inquiries (for admin)
+app.get('/api/inquiries', (req, res) => {
+  const db = readDB();
+  res.json(db.inquiries || []);
+});
+
 app.get('/api/export-database', (req, res) => {
   try {
     const db = readDB();

@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { MapPinIcon, ArrowRightIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import { servicesData } from '../data/servicesData';
-import { fetchFrontendData, normalize, clearFrontendCache } from '../services/frontendData';
+import { fetchFrontendData, normalize, clearFrontendCache, getCachedData } from '../services/frontendData';
 import { importAllCategories } from '../services/importData';
 import { onDataChange } from '../services/jsonDatabase';
 
@@ -166,6 +166,77 @@ const ContentSection = styled.div`
   @media (max-width: 968px) {
     grid-template-columns: 1fr;
     gap: 2rem;
+  }
+`;
+
+// Vertical layout for when no image is provided - About first, then Key Highlights below
+const ContentSectionNoImage = styled.div`
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+`;
+
+const DescriptionColumn = styled.div`
+  h3 {
+    font-size: 1.8rem;
+    font-family: 'Playfair Display', serif;
+    color: #1a1a1a;
+    margin-bottom: 1.5rem;
+    position: relative;
+    display: inline-block;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 0;
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(90deg, #6A1B82, #9b4dca);
+      border-radius: 2px;
+    }
+  }
+  
+  p, div {
+    line-height: 1.9;
+    color: #555;
+    font-size: 1.1rem;
+  }
+`;
+
+const HighlightsColumn = styled.div`
+  background: linear-gradient(135deg, #f8f6fa 0%, #f0ebf5 100%);
+  border-radius: 16px;
+  padding: 2rem 2.5rem;
+  border: 1px solid rgba(106, 27, 130, 0.1);
+  
+  h3 {
+    font-size: 1.5rem;
+    font-family: 'Playfair Display', serif;
+    color: #1a1a1a;
+    margin-bottom: 1.5rem;
+    position: relative;
+    display: inline-block;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 0;
+      width: 50px;
+      height: 3px;
+      background: linear-gradient(90deg, #6A1B82, #9b4dca);
+      border-radius: 2px;
+    }
+  }
+  
+  ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.75rem;
   }
 `;
 
@@ -935,8 +1006,11 @@ const ServicePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const service = servicesData.find(s => s.id === id);
-  const [allCategories, setAllCategories] = useState([]);
-  const [tours, setTours] = useState([]);
+  
+  // Use cached data immediately to avoid flash of loading state
+  const cachedData = getCachedData();
+  const [allCategories, setAllCategories] = useState(cachedData?.allCategories || []);
+  const [tours, setTours] = useState(cachedData?.tours || []);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState(null);
   const [seedingAttempted, setSeedingAttempted] = useState(false);
@@ -995,6 +1069,15 @@ const ServicePage = () => {
     return 'From £—';
   };
 
+  // Helper function to strip HTML tags from text
+  const stripHtml = (html) => {
+    if (!html) return '';
+    // Create a temporary div element to parse HTML
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
+  };
+
   // If the route id matches a category slug, build a service-like object so the page renders instead of 404
   const matchedCategory = React.useMemo(() => {
     if (!id || (allCategories || []).length === 0) return null;
@@ -1017,8 +1100,9 @@ const ServicePage = () => {
     // Only use static servicesData if NO matching database category exists
     if (matchedCategory) {
       const imageToUse = matchedCategory.image || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80';
-      const contentImageToUse = matchedCategory.content_image || imageToUse;
-      console.log('🎯 derivedService building for', id, '| Image length:', imageToUse?.length);
+      // Don't fallback to hero image - content_image should be empty if not set
+      const contentImageToUse = matchedCategory.content_image || '';
+      console.log('🎯 derivedService building for', id, '| Image length:', imageToUse?.length, '| Content image:', contentImageToUse ? 'YES' : 'NONE');
       
       // Add cache busting for uploaded images
       let finalImage = imageToUse;
@@ -1034,14 +1118,27 @@ const ServicePage = () => {
         finalContentImage = `${contentImageToUse}?v=${timestamp}`;
       }
       
+      // Parse highlights into features array
+      let featuresArray = [];
+      if (matchedCategory.highlights) {
+        // Strip HTML and split by common delimiters
+        const plainText = stripHtml(matchedCategory.highlights);
+        // Split by commas, periods, or newlines
+        featuresArray = plainText
+          .split(/[,\n]|\. /)
+          .map(item => item.trim())
+          .filter(item => item.length > 3 && item.length < 200);
+      }
+      
       return {
         id: matchedCategory.slug || matchedCategory.id,
         title: matchedCategory.name,
-        shortDescription: matchedCategory.description || 'Browse experiences for this category.',
+        shortDescription: matchedCategory.description ? stripHtml(matchedCategory.description).substring(0, 200) : 'Browse experiences for this category.',
         fullDescription: matchedCategory.description || '',
         image: finalImage,
         content_image: finalContentImage,
-        features: [],
+        features: featuresArray,
+        highlights: matchedCategory.highlights || '',
         packages: filterToursByCategory(matchedCategory.id).map((tour) => ({
           ...tour,
           price: tour.price,
@@ -1057,7 +1154,8 @@ const ServicePage = () => {
       // Check if we have a Tours category in the database with an image
       const toursCategory = (allCategories || []).find(c => c.slug === 'tours' || c.name === 'Tours');
       const toursImage = toursCategory?.image || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80';
-      const toursContentImage = toursCategory?.content_image || toursImage;
+      // Don't fallback to hero image - content_image should be empty if not set
+      const toursContentImage = toursCategory?.content_image || '';
       
       // Add cache busting for uploaded images
       let finalToursImage = toursImage;
@@ -1075,7 +1173,7 @@ const ServicePage = () => {
       return {
         id: 'tours',
         title: 'Tours',
-        shortDescription: toursCategory?.description || 'Explore our categories and packages.',
+        shortDescription: toursCategory?.description ? stripHtml(toursCategory.description).substring(0, 200) : 'Explore our categories and packages.',
         fullDescription: toursCategory?.description || 'Browse all tour categories and drill down to see every package.',
         image: finalToursImage,
         content_image: finalContentImage,
@@ -1583,62 +1681,108 @@ const ServicePage = () => {
           >
             {derivedService.title}
           </Title>
-          {/* Hide description in hero for private-tours - it's shown in content section instead */}
-          {normalize(id) !== 'private-tours' && (
-            <Subtitle
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-            >
-              {derivedService.shortDescription}
-            </Subtitle>
-          )}
+          {/* Description hidden from hero for all categories - shown in content section instead */}
         </HeroContent>
       </HeroSection>
 
-      <ContentSection>
-        <TextContent>
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <div 
-              dangerouslySetInnerHTML={{ __html: derivedService.fullDescription }}
-              style={{ lineHeight: '1.8', color: '#666', fontSize: '1.1rem' }}
-            />
-            
-            {derivedService.features && derivedService.features.length > 0 && (
-              <>
-                <h3>Key Highlights</h3>
-                <FeaturesList>
-                  {derivedService.features.map((feature, index) => (
-                    <FeatureItem
-                      key={index}
-                      initial={{ opacity: 0, x: -20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.5, delay: index * 0.1 }}
-                    >
-                      {feature}
-                    </FeatureItem>
-                  ))}
-                </FeaturesList>
-              </>
-            )}
-          </motion.div>
-        </TextContent>
+      {/* Check if there's a valid content image (not just hero fallback) */}
+      {(() => {
+        const contentImg = derivedService.content_image || derivedService.contentImage;
+        const hasContentImage = contentImg && contentImg.trim() !== '' && !contentImg.includes('unsplash.com');
+        
+        if (hasContentImage) {
+          // Original 2-column layout with image
+          return (
+            <ContentSection>
+              <TextContent>
+                <motion.div
+                  initial={{ opacity: 0, x: -50 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8 }}
+                >
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: derivedService.fullDescription }}
+                    style={{ lineHeight: '1.8', color: '#666', fontSize: '1.1rem' }}
+                  />
+                  
+                  {derivedService.features && derivedService.features.length > 0 && (
+                    <>
+                      <h3>Key Highlights</h3>
+                      <FeaturesList>
+                        {derivedService.features.map((feature, index) => (
+                          <FeatureItem
+                            key={index}
+                            initial={{ opacity: 0, x: -20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.5, delay: index * 0.1 }}
+                          >
+                            {feature}
+                          </FeatureItem>
+                        ))}
+                      </FeaturesList>
+                    </>
+                  )}
+                </motion.div>
+              </TextContent>
 
-        <ImageContainer
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-        >
-          <img src={derivedService.content_image || derivedService.contentImage || derivedService.image} alt={derivedService.title} />
-        </ImageContainer>
-      </ContentSection>
+              <ImageContainer
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8 }}
+              >
+                <img src={contentImg} alt={derivedService.title} />
+              </ImageContainer>
+            </ContentSection>
+          );
+        } else {
+          // Vertical layout: About first, then Key Highlights below (no image)
+          return (
+            <ContentSectionNoImage>
+              <DescriptionColumn>
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6 }}
+                >
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: derivedService.fullDescription }}
+                  />
+                </motion.div>
+              </DescriptionColumn>
+
+              {derivedService.features && derivedService.features.length > 0 && (
+                <HighlightsColumn>
+                  <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                  >
+                    <h3>Key Highlights</h3>
+                    <FeaturesList>
+                      {derivedService.features.map((feature, index) => (
+                        <FeatureItem
+                          key={index}
+                          initial={{ opacity: 0, x: -20 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 0.4, delay: index * 0.05 }}
+                        >
+                          {feature}
+                        </FeatureItem>
+                      ))}
+                    </FeaturesList>
+                  </motion.div>
+                </HighlightsColumn>
+              )}
+            </ContentSectionNoImage>
+          );
+        }
+      })()}
 
       {/* Airport Transfers special layout with booking form */}
       {(() => {
@@ -1932,7 +2076,7 @@ const ServicePage = () => {
             <BookingForm onSubmit={handleBookingSubmit}>
               <FormTitle>Book Now</FormTitle>
               <FormSubtitle>
-                To book your vehicle hire, either give us a call on +44(0) 20 8890 8181 or fill out the form below with your preferred dates and vehicle choice. We'll get back to you within one working day to discuss further.
+                To book your vehicle hire, either give us a call on 020 8830 8611 or fill out the form below with your preferred dates and vehicle choice. We'll get back to you within one working day to discuss further.
               </FormSubtitle>
 
               <FormGroup>

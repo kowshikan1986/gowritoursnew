@@ -473,14 +473,13 @@ const TourDetailsForm = ({ details, onChange }) => {
 
       <Field>
         <Label>Additional Tour Highlights (one per line)</Label>
-        <TextArea
-          value={(details.highlights || []).join('\n')}
-          onChange={(e) => handleDetailsChange('highlights', e.target.value.split('\n').filter(h => h.trim()))}
+        <RichTextEditor
+          value={Array.isArray(details.highlights) ? details.highlights.join('\n') : (details.highlights || '')}
+          onChange={(val) => handleDetailsChange('highlights', val.split('\n').filter(h => h.trim()))}
           placeholder="(Optional) Extra highlights to show under Tour Highlights on the tour page."
-          rows="4"
         />
         <p style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '0.5rem' }}>
-          These lines appear in the "Tour Highlights" section on the tour page.
+          These lines appear in the "Tour Highlights" section on the tour page. Use one line per highlight.
         </p>
       </Field>
       
@@ -795,14 +794,13 @@ const TourDetailsForm = ({ details, onChange }) => {
 
               <Field>
                 <Label>Additional Tour Highlights (one per line)</Label>
-                <TextArea
-                  value={(pkg.highlights || []).join('\n')}
-                  onChange={(e) => handleUpdateSubPackage(pkgIndex, 'highlights', e.target.value.split('\n').filter(h => h.trim()))}
+                <RichTextEditor
+                  value={Array.isArray(pkg.highlights) ? pkg.highlights.join('\n') : (pkg.highlights || '')}
+                  onChange={(val) => handleUpdateSubPackage(pkgIndex, 'highlights', val.split('\n').filter(h => h.trim()))}
                   placeholder="(Optional) Extra highlights to show under Tour Highlights on the tour page."
-                  rows="4"
                 />
                 <p style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '0.5rem' }}>
-                  These lines appear in the "Tour Highlights" section on the tour page.
+                  These lines appear in the "Tour Highlights" section on the tour page. Use one line per highlight.
                 </p>
               </Field>
               

@@ -183,6 +183,7 @@ const Select = styled.select`
 `;
 
 const TextArea = styled.textarea`
+  width: 100%;
   border: 1px solid #e5e7eb;
   border-radius: 24px;
   padding: 1rem 1.25rem;
@@ -512,6 +513,19 @@ const ContactUs = () => {
       
       if (result.success) {
         setShowSuccess(true);
+        // Reset form fields
+        setForm({
+          name: '',
+          email: '',
+          phone: '',
+          destination: '',
+          packageId: '',
+          message: '',
+          travelers: '1',
+          budget: '',
+          travelDates: '',
+          interests: []
+        });
       } else {
         alert(result.message || 'Failed to send. Please try again.');
       }
@@ -525,10 +539,10 @@ const ContactUs = () => {
 
   useEffect(() => {
     const errs = {};
-    if (!form.name || form.name.trim().length < 2) errs.name = 'Please enter your full name';
+    if (!form.name || form.name.trim().length < 2) errs.name = 'Please enter your name';
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
     if (!emailOk) errs.email = 'Enter a valid email address';
-    if (!form.message || form.message.trim().length < 10) errs.message = 'Tell us more about your trip';
+    if (!form.message || form.message.trim().length < 10) errs.message = 'Please enter at least 10 characters';
     setErrors(errs);
     const fields = ['name','email','message'];
     const filled = fields.filter(f => !errs[f]).length;
@@ -545,15 +559,12 @@ const ContactUs = () => {
             transition={{ duration: 0.4, delay: 0.1 }}
           >
             <FormHeader>
-              <h3>Plan Your Luxury Experience</h3>
-              <span>Step {currentStep} of 3</span>
+              <h3>Get in Touch With Us</h3>
             </FormHeader>
             
-            <StepIndicator>
-              <Step $active={currentStep === 1} $completed={currentStep > 1} onClick={() => setCurrentStep(1)}>1</Step>
-              <Step $active={currentStep === 2} $completed={currentStep > 2} onClick={() => currentStep > 1 && setCurrentStep(2)}>2</Step>
-              <Step $active={currentStep === 3} $completed={false} onClick={() => currentStep > 2 && setCurrentStep(3)}>3</Step>
-            </StepIndicator>
+            <p style={{ color: '#666', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+              Please provide your name, email address, phone number, and your message. After a successful submission, we will respond to your email within 24 hours.
+            </p>
             
             <Progress><ProgressFill percent={progress} /></Progress>
             
@@ -562,158 +573,65 @@ const ContactUs = () => {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
             >
-              {/* Step 1: Basic Info */}
-              {currentStep === 1 && (
-                <>
-                  <FullRow>
-                    <Label>Full Name *</Label>
-                    <InputWrapper data-has-value={Boolean(form.name)}>
-                      <IconLeft><UserIcon style={{ width: 18, height: 18 }} /></IconLeft>
-                      <FloatingLabel>Enter your full name</FloatingLabel>
-                      <Input name="name" value={form.name} onChange={update} required />
-                    </InputWrapper>
-                    {errors.name && <span style={{ color: '#e11d48', fontSize: '0.9rem' }}>{errors.name}</span>}
-                  </FullRow>
+              <Field>
+                <Label>Name *</Label>
+                <InputWrapper data-has-value={Boolean(form.name)}>
+                  <IconLeft><UserIcon style={{ width: 18, height: 18 }} /></IconLeft>
+                  <FloatingLabel>Enter your name</FloatingLabel>
+                  <Input name="name" value={form.name} onChange={update} required />
+                </InputWrapper>
+                {errors.name && <span style={{ color: '#e11d48', fontSize: '0.9rem' }}>{errors.name}</span>}
+              </Field>
 
-                  <FullRow>
-                    <Label>Email Address *</Label>
-                    <InputWrapper data-has-value={Boolean(form.email)}>
-                      <IconLeft><EnvelopeIcon style={{ width: 18, height: 18 }} /></IconLeft>
-                      <FloatingLabel>your.email@example.com</FloatingLabel>
-                      <Input type="email" name="email" value={form.email} onChange={update} required />
-                    </InputWrapper>
-                    {errors.email && <span style={{ color: '#e11d48', fontSize: '0.9rem' }}>{errors.email}</span>}
-                  </FullRow>
+              <Field>
+                <Label>Email Address *</Label>
+                <InputWrapper data-has-value={Boolean(form.email)}>
+                  <IconLeft><EnvelopeIcon style={{ width: 18, height: 18 }} /></IconLeft>
+                  <FloatingLabel>your.email@example.com</FloatingLabel>
+                  <Input type="email" name="email" value={form.email} onChange={update} required />
+                </InputWrapper>
+                {errors.email && <span style={{ color: '#e11d48', fontSize: '0.9rem' }}>{errors.email}</span>}
+              </Field>
 
-                  <Field>
-                    <Label>Phone Number</Label>
-                    <InputWrapper data-has-value={Boolean(form.phone)}>
-                      <IconLeft><PhoneIcon style={{ width: 18, height: 18 }} /></IconLeft>
-                      <FloatingLabel>+44 20 8830 8611</FloatingLabel>
-                      <Input name="phone" value={form.phone} onChange={update} />
-                    </InputWrapper>
-                  </Field>
+              <Field>
+                <Label>Phone Number</Label>
+                <InputWrapper data-has-value={Boolean(form.phone)}>
+                  <IconLeft><PhoneIcon style={{ width: 18, height: 18 }} /></IconLeft>
+                  <FloatingLabel>+44 20 8830 8611</FloatingLabel>
+                  <Input name="phone" value={form.phone} onChange={update} />
+                </InputWrapper>
+              </Field>
 
-                  <Field>
-                    <Label>Number of Travelers</Label>
-                    <InputWrapper>
-                      <IconLeft><UserIcon style={{ width: 18, height: 18 }} /></IconLeft>
-                      <Select name="travelers" value={form.travelers} onChange={update}>
-                        <option value="1">1 Traveler</option>
-                        <option value="2">2 Travelers</option>
-                        <option value="3-4">3-4 Travelers</option>
-                        <option value="5-8">5-8 Travelers</option>
-                        <option value="9+">9+ Travelers</option>
-                      </Select>
-                    </InputWrapper>
-                  </Field>
+              <Field>
+                <Label>Preferred Travel Dates</Label>
+                <InputWrapper data-has-value={Boolean(form.travelDates)}>
+                  <IconLeft><CalendarIcon style={{ width: 18, height: 18 }} /></IconLeft>
+                  <FloatingLabel>e.g., June 2025 or Flexible</FloatingLabel>
+                  <Input name="travelDates" value={form.travelDates} onChange={update} />
+                </InputWrapper>
+              </Field>
 
-                  <FullRow>
-                    <ButtonGroup>
-                      <Submit type="button" onClick={nextStep}>Next Step →</Submit>
-                    </ButtonGroup>
-                  </FullRow>
-                </>
-              )}
+              <FullRow>
+                <Label>Your Message *</Label>
+                <TextArea 
+                  name="message" 
+                  placeholder="Tell us about your inquiry or how we can help you..." 
+                  value={form.message} 
+                  onChange={update} 
+                  required 
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+                  <span style={{ color: '#888', fontSize: '0.85rem' }}>Min 10 characters</span>
+                  <span style={{ color: '#6A1B82', fontSize: '0.85rem' }}>{form.message.length} chars</span>
+                </div>
+                {errors.message && <span style={{ color: '#e11d48', fontSize: '0.9rem' }}>{errors.message}</span>}
+              </FullRow>
 
-              {/* Step 2: Trip Details */}
-              {currentStep === 2 && (
-                <>
-                  <Field>
-                    <Label>Select Your Package</Label>
-                    <InputWrapper>
-                      <IconLeft><MapPinIcon style={{ width: 18, height: 18 }} /></IconLeft>
-                      <Select name="packageId" value={form.packageId} onChange={update}>
-                        <option value="">Select a package</option>
-                        {loading ? (
-                          <option disabled>Loading packages...</option>
-                        ) : (
-                          <>
-                            {categories
-                              .filter(c => !c.parent_id)
-                              .filter(c => {
-                                const slug = c.slug || '';
-                                return slug !== 'airport-transfers' && slug !== 'vehicle-hire';
-                              })
-                              .map(category => (
-                              <optgroup key={category.id} label={category.name}>
-                                {categories.filter(sub => sub.parent_id === category.id).map(sub => (
-                                  <option key={sub.id} value={sub.id}>{sub.name}</option>
-                                ))}
-                                {tours.filter(tour => tour.category_id === category.id).map(tour => (
-                                  <option key={tour.id} value={tour.id}>{tour.title}</option>
-                                ))}
-                              </optgroup>
-                            ))}
-                          </>
-                        )}
-                      </Select>
-                    </InputWrapper>
-                  </Field>
-
-                  <FullRow>
-                    <Label>Preferred Travel Dates</Label>
-                    <InputWrapper data-has-value={Boolean(form.travelDates)}>
-                      <IconLeft><CalendarIcon style={{ width: 18, height: 18 }} /></IconLeft>
-                      <FloatingLabel>e.g., June 2025 or Flexible</FloatingLabel>
-                      <Input name="travelDates" value={form.travelDates} onChange={update} />
-                    </InputWrapper>
-                  </FullRow>
-
-                  <FullRow>
-                    <Label>Your Interests</Label>
-                    <InterestGrid>
-                      {interestOptions.map(interest => (
-                        <InterestCard
-                          key={interest.id}
-                          $selected={form.interests.includes(interest.id)}
-                          onClick={() => toggleInterest(interest.id)}
-                        >
-                          <div className="icon">{interest.icon}</div>
-                          <div className="label">{interest.label}</div>
-                        </InterestCard>
-                      ))}
-                    </InterestGrid>
-                  </FullRow>
-
-                  <FullRow>
-                    <ButtonGroup>
-                      <SecondaryButton type="button" onClick={prevStep}>← Previous</SecondaryButton>
-                      <Submit type="button" onClick={nextStep}>Next Step →</Submit>
-                    </ButtonGroup>
-                  </FullRow>
-                </>
-              )}
-
-              {/* Step 3: Message */}
-              {currentStep === 3 && (
-                <>
-                  <FullRow>
-                    <Label>Tell Us About Your Dream Trip *</Label>
-                    <TextArea 
-                      name="message" 
-                      placeholder="Share your vision for the perfect luxury travel experience. What makes this trip special to you?" 
-                      value={form.message} 
-                      onChange={update} 
-                      required 
-                    />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
-                      <span style={{ color: '#888', fontSize: '0.85rem' }}>Min 10 characters</span>
-                      <span style={{ color: '#6A1B82', fontSize: '0.85rem' }}>{form.message.length} chars</span>
-                    </div>
-                    {errors.message && <span style={{ color: '#e11d48', fontSize: '0.9rem' }}>{errors.message}</span>}
-                  </FullRow>
-
-                  <FullRow>
-                    <ButtonGroup>
-                      <SecondaryButton type="button" onClick={prevStep}>← Previous</SecondaryButton>
-                      <Submit type="submit" disabled={Object.keys(errors).length > 0 || isSubmitting}>
-                        {isSubmitting ? 'Sending...' : 'Send Inquiry ✓'}
-                      </Submit>
-                    </ButtonGroup>
-                  </FullRow>
-                </>
-              )}
+              <FullRow>
+                <Submit type="submit" disabled={Object.keys(errors).length > 0 || isSubmitting}>
+                  {isSubmitting ? 'Sending...' : 'Send Message'}
+                </Submit>
+              </FullRow>
             </Form>
             <AnimatePresence>
               {showSuccess && (
@@ -729,8 +647,8 @@ const ContactUs = () => {
                     exit={{ scale: 0.9, opacity: 0 }}
                   >
                     <CheckCircleIcon style={{ width: 48, height: 48, color: '#6A1B82', marginBottom: '0.75rem' }} />
-                    <h4 style={{ marginBottom: '0.5rem', fontSize: '1.25rem', fontWeight: 700 }}>Message ready to send</h4>
-                    <p style={{ color: '#666', marginBottom: '1rem' }}>Your email client will open with details.</p>
+                    <h4 style={{ marginBottom: '0.5rem', fontSize: '1.25rem', fontWeight: 700 }}>Message Sent!</h4>
+                    <p style={{ color: '#666', marginBottom: '1rem' }}>We will respond to your email within 24 hours.</p>
                     <Submit onClick={() => setShowSuccess(false)}>Close</Submit>
                   </SuccessCard>
                 </SuccessOverlay>

@@ -143,8 +143,11 @@ export const updateCategory = async (slug, data) => {
     payload.image = imagePath;
   }
   
-  // Only include content_image in payload if it's being updated
-  if (contentImagePath !== undefined) {
+  // Handle delete content image flag
+  if (data.deleteContentImage === true) {
+    payload.delete_content_image = true;
+  } else if (contentImagePath !== undefined) {
+    // Only include content_image in payload if it's being updated
     payload.content_image = contentImagePath;
   }
   
