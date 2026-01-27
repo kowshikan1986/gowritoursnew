@@ -305,6 +305,7 @@ const AdminDashboard = () => {
     title: '',
     image: null,
     is_active: true,
+    logo_type: 'main_logo',
   });
   const [subCategoryForm, setSubCategoryForm] = useState({
     name: '',
@@ -969,9 +970,10 @@ const AdminDashboard = () => {
       await createLogo({
         title: logoForm.title,
         is_active: logoForm.is_active,
+        logo_type: logoForm.logo_type,
         imageFile: logoForm.image,
       });
-      setLogoForm({ title: '', image: null, is_active: true });
+      setLogoForm({ title: '', image: null, is_active: true, logo_type: 'main_logo' });
       fetchData('logos');
     } catch (err) {
       setError(err.message || 'Unable to create logo');
@@ -2665,6 +2667,18 @@ const AdminDashboard = () => {
               />
             </Field>
             <Field style={{ minWidth: 200 }}>
+              <Label>Type</Label>
+              <Select
+                value={logoForm.logo_type}
+                onChange={(e) =>
+                  setLogoForm({ ...logoForm, logo_type: e.target.value })
+                }
+              >
+                <option value="main_logo">Main Logo</option>
+                <option value="anniversary_badge">Anniversary Badge (Footer)</option>
+              </Select>
+            </Field>
+            <Field style={{ minWidth: 200 }}>
               <Label>Active</Label>
               <Select
                 value={logoForm.is_active ? 'yes' : 'no'}
@@ -2696,6 +2710,9 @@ const AdminDashboard = () => {
               <Item key={l.id}>
                 <div>
                   <strong>{l.title}</strong>
+                  <Tag $variant={l.logo_type === 'anniversary_badge' ? 'success' : undefined}>
+                    {l.logo_type === 'anniversary_badge' ? 'Anniversary Badge' : 'Main Logo'}
+                  </Tag>
                   <Tag $variant={l.is_active ? undefined : 'warn'}>
                     {l.is_active ? 'Active' : 'Inactive'}
                   </Tag>

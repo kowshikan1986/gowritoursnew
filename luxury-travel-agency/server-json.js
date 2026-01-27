@@ -571,7 +571,7 @@ app.get('/api/logos/:id', apiCache, (req, res) => {
 app.post('/api/logos', (req, res) => {
   try {
     const db = readDB();
-    const { title, name, image, image_url, is_active } = req.body;
+    const { title, name, image, image_url, is_active, logo_type } = req.body;
     
     const newLogo = {
       id: Date.now().toString(),
@@ -580,6 +580,7 @@ app.post('/api/logos', (req, res) => {
       image: image || image_url || '',
       image_url: image_url || image || '',
       is_active: is_active !== false,
+      logo_type: logo_type || 'main_logo',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };

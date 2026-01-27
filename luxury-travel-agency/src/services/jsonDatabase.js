@@ -369,7 +369,8 @@ export const createLogo = async (data) => {
     name: data.title,
     image: imagePath,
     image_url: imagePath,
-    is_active: data.is_active
+    is_active: data.is_active,
+    logo_type: data.logo_type || 'main_logo'
   };
   
   const response = await fetch(`${API_BASE}/logos`, {
