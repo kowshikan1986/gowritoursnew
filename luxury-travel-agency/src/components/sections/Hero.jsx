@@ -330,20 +330,6 @@ const Hero = () => {
 
       <HeroContent>
         <AnimatePresence mode="sync">
-          <HeroTitle
-            key={`title-${currentIndex}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.2, ease: 'easeInOut' }}
-          >
-            {currentHero.title || 'Extraordinary Journeys'}
-            <br />
-            <span style={{ color: '#7c3aed' }}>{heroItems.length ? '' : 'Await'}</span>
-          </HeroTitle>
-        </AnimatePresence>
-        
-        <AnimatePresence mode="sync">
           <HeroSubtitle
             key={`subtitle-${currentIndex}`}
             initial={{ opacity: 0 }}

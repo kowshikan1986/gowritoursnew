@@ -1772,7 +1772,7 @@ const PackageDetailPage = () => {
                       {currentSubPackage.name}
                     </div>
                     <PriceTag>£{currentSubPackage.price}</PriceTag>
-                    <PriceNote>Per adult • {currentSubPackage.duration}</PriceNote>
+                    <PriceNote>Per adult</PriceNote>
                     {currentSubPackage.childPrice && (
                       <div style={{ 
                         fontSize: '1rem', 

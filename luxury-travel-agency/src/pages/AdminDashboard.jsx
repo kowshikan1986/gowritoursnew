@@ -1195,13 +1195,6 @@ const AdminDashboard = () => {
               Login
             </Button>
           </form>
-          
-          <Info style={{ marginTop: '2rem', fontSize: '0.85rem', color: '#9ca3af', textAlign: 'center' }}>
-            Default credentials: admin / G0wr!T0ur$
-          </Info>
-          <Info style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#6b7280', textAlign: 'center', fontStyle: 'italic' }}>
-            Change these in the source code or use environment variables for production use
-          </Info>
         </Card>
       ) : (
         // Show admin dashboard if authenticated
