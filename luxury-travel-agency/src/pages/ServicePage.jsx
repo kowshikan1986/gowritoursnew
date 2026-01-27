@@ -1029,6 +1029,16 @@ const ServicePage = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [airportTransferCategories, setAirportTransferCategories] = useState([]);
+  const [otherServicesCategories, setOtherServicesCategories] = useState([]);
+  
+  // Other Services form state
+  const [otherServicesForm, setOtherServicesForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    selectedService: '',
+    message: ''
+  });
 
   const TOUR_ROOT_SLUGS = [
     'uk-tours',
@@ -1338,6 +1348,43 @@ const ServicePage = () => {
     }
   }, [id]);
 
+  // Load other-services subcategories for booking form
+  useEffect(() => {
+    if (normalize(id) === 'other-services') {
+      const loadOtherServicesCategories = async () => {
+        try {
+          const { allCategories: cats } = await fetchFrontendData();
+          const otherServicesMain = (cats || []).find(c => 
+            normalize(c.slug || c.name || '') === 'other-services'
+          );
+          
+          if (otherServicesMain) {
+            const subcats = (cats || []).filter(c => 
+              c.parent_id === otherServicesMain.id
+            ).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+            
+            console.log('🔄 Loaded other services subcategories:', subcats);
+            setOtherServicesCategories(subcats);
+          }
+        } catch (err) {
+          console.error('Error loading other services categories:', err);
+        }
+      };
+      
+      loadOtherServicesCategories();
+      
+      // Also listen for category changes to refresh
+      const unsubscribe = onDataChange((type) => {
+        if (type === 'categories') {
+          console.log('🔄 Categories changed, reloading other services...');
+          loadOtherServicesCategories();
+        }
+      });
+      
+      return () => unsubscribe();
+    }
+  }, [id]);
+
   // Handle booking form input changes
   const handleBookingInputChange = (e) => {
     const { name, value } = e.target;
@@ -1396,7 +1443,7 @@ Additional Message: ${bookingForm.message || 'None'}
       const result = await response.json();
       
       if (result.success) {
-        alert('Thank you for your booking request! We will contact you within 24 hours.');
+        alert('Thank you for your booking request! We will respond within 24 hours.');
         setBookingForm({
           name: '',
           email: '',
@@ -1426,7 +1473,7 @@ Additional Message: ${bookingForm.message || 'None'}
       }
     } catch (error) {
       console.error('Error submitting booking:', error);
-      alert('Failed to send booking request. Please try again or call us directly.');
+      alert('Failed to send booking request: ' + (error.message || 'Network error. Please try again or call us directly.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -1438,6 +1485,72 @@ Additional Message: ${bookingForm.message || 'None'}
       ...prev,
       [name]: value
     }));
+  };
+
+  // Handle other services form input changes
+  const handleOtherServicesChange = (e) => {
+    const { name, value } = e.target;
+    setOtherServicesForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle other services form submission
+  const handleOtherServicesSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      const formType = 'Other Services Enquiry';
+      
+      // Build the message with all enquiry details
+      const enquiryDetails = `
+${formType}
+
+Name: ${otherServicesForm.name}
+Email: ${otherServicesForm.email}
+Phone: ${otherServicesForm.phone}
+
+Selected Service: ${otherServicesForm.selectedService}
+
+Message: ${otherServicesForm.message}
+      `.trim();
+
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: otherServicesForm.name,
+          email: otherServicesForm.email,
+          phone: otherServicesForm.phone,
+          selectedPackage: formType,
+          message: enquiryDetails
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        alert('Thank you for your enquiry! We will respond within 24 hours.');
+        setOtherServicesForm({
+          name: '',
+          email: '',
+          phone: '',
+          selectedService: '',
+          message: ''
+        });
+      } else {
+        alert(result.message || 'Failed to send enquiry. Please try again or call us directly.');
+      }
+    } catch (error) {
+      console.error('Error submitting other services enquiry:', error);
+      alert('Failed to send enquiry: ' + (error.message || 'Network error. Please try again or call us directly.'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const rootCategories = (allCategories || [])
@@ -2112,6 +2225,45 @@ Additional Message: ${bookingForm.message || 'None'}
               </FormSubtitle>
 
               <FormGroup>
+                <FormLabel htmlFor="vh-name">Name *</FormLabel>
+                <FormInput
+                  type="text"
+                  id="vh-name"
+                  name="name"
+                  placeholder="Your full name"
+                  value={bookingForm.name}
+                  onChange={handleBookingChange}
+                  required
+                />
+              </FormGroup>
+
+              <FormGroup>
+                <FormLabel htmlFor="vh-email">Email *</FormLabel>
+                <FormInput
+                  type="email"
+                  id="vh-email"
+                  name="email"
+                  placeholder="Your email address"
+                  value={bookingForm.email}
+                  onChange={handleBookingChange}
+                  required
+                />
+              </FormGroup>
+
+              <FormGroup>
+                <FormLabel htmlFor="vh-phone">Phone *</FormLabel>
+                <FormInput
+                  type="tel"
+                  id="vh-phone"
+                  name="phone"
+                  placeholder="Your phone number"
+                  value={bookingForm.phone}
+                  onChange={handleBookingChange}
+                  required
+                />
+              </FormGroup>
+
+              <FormGroup>
                 <FormLabel htmlFor="pickupDate">Pick Up Date *</FormLabel>
                 <FormInput
                   type="date"
@@ -2298,7 +2450,150 @@ Additional Message: ${bookingForm.message || 'None'}
         </PackagesSection>
       )}
 
-      {shouldShowSubcategories && childCategories.length > 0 && normalize(id) !== 'airport-transfers' && normalize(id) !== 'vehicle-hire' && (
+      {/* Other Services subcategory cards with enquiry form */}
+      {normalize(id) === 'other-services' && childCategories.length > 0 && (
+        <PackagesSection>
+          {console.log('🔧 Other-services section rendering with', childCategories.length, 'services')}
+          <SectionHeader style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
+              Our Services
+            </motion.h2>
+          </SectionHeader>
+          
+          <VehicleHireGrid>
+            {/* Left side - Service cards */}
+            <CategoryGrid>
+              {childCategories.map((sub, index) => {
+                const slug = sub.slug || sub.id || normalize(sub.name || '');
+                const subImage = getImage(sub);
+                const location = sub.location || null;
+                
+                const handleClick = (e) => {
+                  // Prevent navigation for other-services subcategories
+                  e.preventDefault();
+                  
+                  if (e.ctrlKey || e.metaKey) {
+                    // Allow admin edit with Ctrl/Cmd+Click
+                    navigate(`/admin?tab=subcategories&edit=${sub.id}`);
+                  }
+                  // Otherwise, do nothing - stay on current page
+                };
+                
+                return (
+                  <CategoryCard
+                    key={slug}
+                    as={motion.div}
+                    onClick={handleClick}
+                    style={{ cursor: 'default' }}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                  >
+                    <CategoryImage $image={subImage} />
+                    <CategoryContent>
+                      <CategoryName>{sub.name}</CategoryName>
+                      {sub.description && <CategoryDesc>{sub.description}</CategoryDesc>}
+                    </CategoryContent>
+                  </CategoryCard>
+                );
+              })}
+            </CategoryGrid>
+
+            {/* Right side - Enquiry form */}
+            <BookingForm onSubmit={handleOtherServicesSubmit}>
+              <FormTitle>Enquire Now</FormTitle>
+              <FormSubtitle>
+                For enquiries about our services, please fill out the form below. We'll get back to you within 24 hours.
+              </FormSubtitle>
+
+              <FormGroup>
+                <FormLabel htmlFor="os-name">Name *</FormLabel>
+                <FormInput
+                  type="text"
+                  id="os-name"
+                  name="name"
+                  placeholder="Your full name"
+                  value={otherServicesForm.name}
+                  onChange={handleOtherServicesChange}
+                  required
+                />
+              </FormGroup>
+
+              <FormGroup>
+                <FormLabel htmlFor="os-email">Email *</FormLabel>
+                <FormInput
+                  type="email"
+                  id="os-email"
+                  name="email"
+                  placeholder="Your email address"
+                  value={otherServicesForm.email}
+                  onChange={handleOtherServicesChange}
+                  required
+                />
+              </FormGroup>
+
+              <FormGroup>
+                <FormLabel htmlFor="os-phone">Phone *</FormLabel>
+                <FormInput
+                  type="tel"
+                  id="os-phone"
+                  name="phone"
+                  placeholder="Your phone number"
+                  value={otherServicesForm.phone}
+                  onChange={handleOtherServicesChange}
+                  required
+                />
+              </FormGroup>
+
+              <FormGroup>
+                <FormLabel htmlFor="os-service">Select Service *</FormLabel>
+                <FormSelect
+                  id="os-service"
+                  name="selectedService"
+                  value={otherServicesForm.selectedService}
+                  onChange={handleOtherServicesChange}
+                  required
+                >
+                  <option value="">Select a Service</option>
+                  {childCategories.map(sub => (
+                    <option key={sub.id} value={sub.name}>{sub.name}</option>
+                  ))}
+                </FormSelect>
+              </FormGroup>
+
+              <FormGroup>
+                <FormLabel htmlFor="os-message">Message *</FormLabel>
+                <FormTextarea
+                  id="os-message"
+                  name="message"
+                  placeholder="Please provide details about your enquiry..."
+                  value={otherServicesForm.message}
+                  onChange={handleOtherServicesChange}
+                  required
+                  rows={5}
+                />
+              </FormGroup>
+
+              <SubmitButton
+                type="submit"
+                disabled={isSubmitting}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {isSubmitting ? 'Sending...' : 'Submit Enquiry →'}
+              </SubmitButton>
+            </BookingForm>
+          </VehicleHireGrid>
+        </PackagesSection>
+      )}
+
+      {shouldShowSubcategories && childCategories.length > 0 && normalize(id) !== 'airport-transfers' && normalize(id) !== 'vehicle-hire' && normalize(id) !== 'other-services' && (
             <PackagesSection>
               <SectionHeader>
                 <motion.h2

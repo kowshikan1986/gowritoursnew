@@ -711,17 +711,22 @@ app.delete('/api/ads/:id', (req, res) => {
 // ==================== CONTACT FORM API ====================
 
 app.post('/api/contact', async (req, res) => {
+  console.log('📨 Received contact form submission');
+  console.log('📨 Body:', JSON.stringify(req.body, null, 2));
+  
   try {
     const { name, email, phone, travelers, budget, travelDates, selectedPackage, interests, message } = req.body;
     
     // Validate required fields
     if (!name || !email || !message) {
+      console.log('❌ Validation failed: missing required fields');
       return res.status(400).json({ success: false, error: 'Name, email, and message are required.' });
     }
     
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
+      console.log('❌ Validation failed: invalid email');
       return res.status(400).json({ success: false, error: 'Please provide a valid email address.' });
     }
     
@@ -752,53 +757,236 @@ app.post('/api/contact', async (req, res) => {
     db.inquiries.unshift(inquiry);
     writeDB(db);
     
-    // Prepare email content
-    const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #6A1B82; border-bottom: 2px solid #6A1B82; padding-bottom: 10px;">
-          New Travel Inquiry
-        </h2>
-        
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr><td style="padding: 8px 0; font-weight: bold; width: 140px;">Name:</td><td>${inquiry.name}</td></tr>
-          <tr><td style="padding: 8px 0; font-weight: bold;">Email:</td><td><a href="mailto:${inquiry.email}">${inquiry.email}</a></td></tr>
-          <tr><td style="padding: 8px 0; font-weight: bold;">Phone:</td><td>${inquiry.phone || 'Not provided'}</td></tr>
-          <tr><td style="padding: 8px 0; font-weight: bold;">Travelers:</td><td>${inquiry.travelers || 'Not specified'}</td></tr>
-          <tr><td style="padding: 8px 0; font-weight: bold;">Budget:</td><td>${inquiry.budget}</td></tr>
-          <tr><td style="padding: 8px 0; font-weight: bold;">Travel Dates:</td><td>${inquiry.travelDates}</td></tr>
-          <tr><td style="padding: 8px 0; font-weight: bold;">Package:</td><td>${inquiry.selectedPackage}</td></tr>
-          <tr><td style="padding: 8px 0; font-weight: bold;">Interests:</td><td>${inquiry.interests}</td></tr>
-        </table>
-        
-        <div style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
-          <strong>Message:</strong>
-          <p style="white-space: pre-wrap;">${inquiry.message}</p>
-        </div>
-        
-        <p style="margin-top: 20px; color: #888; font-size: 12px;">
-          Received: ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })}
-        </p>
-      </div>
-    `;
+    // Check if this is an airport transfer, vehicle hire, or other services booking
+    const isAirportTransfer = inquiry.selectedPackage && inquiry.selectedPackage.includes('Airport Transfer');
+    const isVehicleHire = inquiry.selectedPackage && inquiry.selectedPackage.includes('Vehicle Hire');
+    const isOtherServices = inquiry.selectedPackage && inquiry.selectedPackage.includes('Other Services');
+    const isBooking = isAirportTransfer || isVehicleHire || isOtherServices;
     
-    // Send email
+    // Prepare email content based on type
+    let emailHtml;
+    let emailSubject;
+    
+    if (isOtherServices) {
+      // Specific email format for other services enquiries
+      emailSubject = `Other Services Enquiry from ${inquiry.name}`;
+      
+      emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #6A1B82; border-bottom: 2px solid #6A1B82; padding-bottom: 10px;">
+            Other Services Enquiry
+          </h2>
+          
+          <h3 style="color: #333; margin-top: 20px;">Customer Details</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0; font-weight: bold; width: 140px;">Name:</td><td>${inquiry.name}</td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Email:</td><td><a href="mailto:${inquiry.email}">${inquiry.email}</a></td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Phone:</td><td>${inquiry.phone || 'Not provided'}</td></tr>
+          </table>
+          
+          <h3 style="color: #333; margin-top: 20px;">Enquiry Details</h3>
+          <div style="padding: 15px; background: #f5f5f5; border-radius: 8px; white-space: pre-wrap;">${inquiry.message}</div>
+          
+          <p style="margin-top: 20px; color: #888; font-size: 12px;">
+            Received: ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })}
+          </p>
+        </div>
+      `;
+    } else if (isAirportTransfer || isVehicleHire) {
+      // Specific email format for airport transfer and vehicle hire bookings
+      const bookingType = isAirportTransfer ? 'Airport Transfer Booking' : 'Vehicle Hire Booking';
+      emailSubject = `${bookingType} Request from ${inquiry.name}`;
+      
+      emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #6A1B82; border-bottom: 2px solid #6A1B82; padding-bottom: 10px;">
+            ${bookingType} Request
+          </h2>
+          
+          <h3 style="color: #333; margin-top: 20px;">Customer Details</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0; font-weight: bold; width: 140px;">Name:</td><td>${inquiry.name}</td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Email:</td><td><a href="mailto:${inquiry.email}">${inquiry.email}</a></td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Phone:</td><td>${inquiry.phone || 'Not provided'}</td></tr>
+          </table>
+          
+          <h3 style="color: #333; margin-top: 20px;">Booking Details</h3>
+          <div style="padding: 15px; background: #f5f5f5; border-radius: 8px; white-space: pre-wrap;">${inquiry.message}</div>
+          
+          <p style="margin-top: 20px; color: #888; font-size: 12px;">
+            Received: ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })}
+          </p>
+        </div>
+      `;
+    } else {
+      // Standard travel inquiry format
+      emailSubject = `New Travel Inquiry from ${inquiry.name}`;
+      
+      emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #6A1B82; border-bottom: 2px solid #6A1B82; padding-bottom: 10px;">
+            New Travel Inquiry
+          </h2>
+          
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0; font-weight: bold; width: 140px;">Name:</td><td>${inquiry.name}</td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Email:</td><td><a href="mailto:${inquiry.email}">${inquiry.email}</a></td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Phone:</td><td>${inquiry.phone || 'Not provided'}</td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Travelers:</td><td>${inquiry.travelers || 'Not specified'}</td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Budget:</td><td>${inquiry.budget}</td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Travel Dates:</td><td>${inquiry.travelDates}</td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Package:</td><td>${inquiry.selectedPackage}</td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Interests:</td><td>${inquiry.interests}</td></tr>
+          </table>
+          
+          <div style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+            <strong>Message:</strong>
+            <p style="white-space: pre-wrap;">${inquiry.message}</p>
+          </div>
+          
+          <p style="margin-top: 20px; color: #888; font-size: 12px;">
+            Received: ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })}
+          </p>
+        </div>
+      `;
+    }
+    
+    console.log('📧 Attempting to send email...');
+    console.log('📧 To:', 'gowritour@gmail.com');
+    console.log('📧 CC:', inquiry.email);
+    console.log('📧 Subject:', emailSubject);
+    console.log('📧 Type:', inquiry.selectedPackage);
+    
+    // Prepare customer confirmation email
+    let customerConfirmHtml;
+    if (isOtherServices) {
+      customerConfirmHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #6A1B82; border-bottom: 2px solid #6A1B82; padding-bottom: 10px;">
+            Thank You for Your Enquiry
+          </h2>
+          
+          <p>Dear ${inquiry.name},</p>
+          
+          <p>Thank you for contacting Gowri Tours. We have received your enquiry and will respond within 24 hours.</p>
+          
+          <h3 style="color: #333; margin-top: 20px;">Your Enquiry Details</h3>
+          <div style="padding: 15px; background: #f5f5f5; border-radius: 8px; white-space: pre-wrap;">${inquiry.message}</div>
+          
+          <p style="margin-top: 20px;">If you have any urgent queries, please call us at <strong>+44 7488 850 718</strong>.</p>
+          
+          <p style="margin-top: 20px;">Best regards,<br><strong>Gowri Tours Team</strong></p>
+          
+          <p style="margin-top: 20px; color: #888; font-size: 12px;">
+            This is an automated confirmation. Please do not reply to this email.
+          </p>
+        </div>
+      `;
+    } else if (isAirportTransfer || isVehicleHire) {
+      const bookingType = isAirportTransfer ? 'Airport Transfer' : 'Vehicle Hire';
+      customerConfirmHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #6A1B82; border-bottom: 2px solid #6A1B82; padding-bottom: 10px;">
+            Thank You for Your ${bookingType} Booking Request
+          </h2>
+          
+          <p>Dear ${inquiry.name},</p>
+          
+          <p>Thank you for contacting Gowri Tours. We have received your ${bookingType.toLowerCase()} booking request and will respond within 24 hours.</p>
+          
+          <h3 style="color: #333; margin-top: 20px;">Your Booking Details</h3>
+          <div style="padding: 15px; background: #f5f5f5; border-radius: 8px; white-space: pre-wrap;">${inquiry.message}</div>
+          
+          <p style="margin-top: 20px;">If you have any urgent queries, please call us at <strong>+44 7488 850 718</strong>.</p>
+          
+          <p style="margin-top: 20px;">Best regards,<br><strong>Gowri Tours Team</strong></p>
+          
+          <p style="margin-top: 20px; color: #888; font-size: 12px;">
+            This is an automated confirmation. Please do not reply to this email.
+          </p>
+        </div>
+      `;
+    } else {
+      customerConfirmHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #6A1B82; border-bottom: 2px solid #6A1B82; padding-bottom: 10px;">
+            Thank You for Your Travel Inquiry
+          </h2>
+          
+          <p>Dear ${inquiry.name},</p>
+          
+          <p>Thank you for contacting Gowri Tours. We have received your travel inquiry and will respond within 24 hours.</p>
+          
+          <h3 style="color: #333; margin-top: 20px;">Your Inquiry Details</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            ${inquiry.selectedPackage ? `<tr><td style="padding: 8px 0; font-weight: bold; width: 140px;">Package:</td><td>${inquiry.selectedPackage}</td></tr>` : ''}
+            ${inquiry.travelers ? `<tr><td style="padding: 8px 0; font-weight: bold;">Travelers:</td><td>${inquiry.travelers}</td></tr>` : ''}
+            ${inquiry.travelDates ? `<tr><td style="padding: 8px 0; font-weight: bold;">Travel Dates:</td><td>${inquiry.travelDates}</td></tr>` : ''}
+          </table>
+          
+          ${inquiry.message ? `<div style="margin-top: 15px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+            <strong>Your Message:</strong>
+            <p style="white-space: pre-wrap;">${inquiry.message}</p>
+          </div>` : ''}
+          
+          <p style="margin-top: 20px;">If you have any urgent queries, please call us at <strong>+44 7488 850 718</strong>.</p>
+          
+          <p style="margin-top: 20px;">Best regards,<br><strong>Gowri Tours Team</strong></p>
+          
+          <p style="margin-top: 20px; color: #888; font-size: 12px;">
+            This is an automated confirmation. Please do not reply to this email.
+          </p>
+        </div>
+      `;
+    }
+    
+    // Send email to admin
     try {
-      await transporter.sendMail({
+      const info = await transporter.sendMail({
         from: `"Gowri Tours Website" <${EMAIL_CONFIG.auth.user}>`,
         to: 'gowritour@gmail.com',
         replyTo: inquiry.email,
-        subject: `New Travel Inquiry from ${inquiry.name}`,
+        subject: emailSubject,
         html: emailHtml
       });
       
-      console.log('✅ Inquiry email sent successfully');
+      console.log('✅ Admin email sent successfully! Message ID:', info.messageId);
+      
+      // Send confirmation email to customer
+      try {
+        let customerSubject;
+        if (isAirportTransfer) {
+          customerSubject = 'Airport Transfer Request Received';
+        } else if (isVehicleHire) {
+          customerSubject = 'Vehicle Hire Request Received';
+        } else if (isOtherServices) {
+          customerSubject = 'Other Services Enquiry Received - Gowri Tours';
+        } else {
+          customerSubject = 'Travel Enquiry Request Received - Gowri Tours';
+        }
+          
+        const customerInfo = await transporter.sendMail({
+          from: `"Gowri Tours" <${EMAIL_CONFIG.auth.user}>`,
+          to: inquiry.email,
+          subject: customerSubject,
+          html: customerConfirmHtml
+        });
+        
+        console.log('✅ Customer confirmation email sent! Message ID:', customerInfo.messageId);
+      } catch (customerEmailError) {
+        console.error('⚠️ Customer confirmation email failed:', customerEmailError.message);
+        // Continue even if customer email fails
+      }
+      
       res.json({ success: true, message: 'Thank you! Your inquiry has been sent.' });
     } catch (emailError) {
       console.error('⚠️ Email sending failed:', emailError.message);
+      console.error('⚠️ Full error:', JSON.stringify(emailError, null, 2));
+      // Still return success since data was saved to database
       res.json({ 
         success: true, 
-        message: 'Thank you! Your inquiry has been received.',
-        note: 'Email notification pending'
+        message: 'Thank you! Your request has been received. We will contact you soon.',
+        emailSent: false
       });
     }
     
