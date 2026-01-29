@@ -37,9 +37,28 @@ transporter.verify((error, success) => {
 // Middleware
 app.use(compression({ level: 9, threshold: 0 }));
 
-// CORS configuration - allow all origins for deployment
+// CORS configuration - allow specific origins
+const allowedOrigins = [
+  'http://172.86.91.5',
+  'https://172.86.91.5',
+  'http://172.86.91.5:3000',
+  'http://172.86.91.5:4000',
+  'http://localhost:3000',
+  'http://localhost:4000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:4000'
+];
+
 const corsOptions = {
-  origin: '*',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('172.86.91.5')) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all for flexibility, remove this line for strict mode
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200
 };

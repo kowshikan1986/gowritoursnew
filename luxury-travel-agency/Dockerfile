@@ -25,7 +25,7 @@ RUN npm run build
 ENV NODE_ENV=production
 
 # Remove dev dependencies after build
-RUN npm prune --production
+RUN npm prune --production --legacy-peer-deps
 
 # Create data directory for database
 RUN mkdir -p /app/data /app/logs /app/public/uploads
