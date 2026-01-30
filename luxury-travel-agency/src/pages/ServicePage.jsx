@@ -2616,6 +2616,17 @@ Message: ${otherServicesForm.message}
                   const subImage = getImage(sub);
                   const location = sub.location || null;
                   
+                  console.log('🔗 Subcategory card debug:', {
+                    id,
+                    subName: sub.name,
+                    slug,
+                    normalizedSlug,
+                    isOtherServices,
+                    isCruises,
+                    isPrivateTours,
+                    linkTarget
+                  });
+                  
                   const handleClick = (e) => {
                     if (e.ctrlKey || e.metaKey) {
                       e.preventDefault();
