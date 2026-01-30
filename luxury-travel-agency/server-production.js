@@ -391,10 +391,15 @@ app.get('/api/ads', (req, res) => {
 
 // ==================== ERROR HANDLING ====================
 
-// 404 handler
-app.use('*', (req, res) => {
-  logger.warn(`404 - Not Found: ${req.method} ${req.originalUrl}`);
-  res.status(404).json({ error: 'Not Found' });
+// SPA fallback - serve index.html for all non-API routes
+app.get('*', (req, res) => {
+  // Don't serve index.html for API routes or static files
+  if (req.originalUrl.startsWith('/api/') || req.originalUrl.includes('.')) {
+    logger.warn(`404 - Not Found: ${req.method} ${req.originalUrl}`);
+    return res.status(404).json({ error: 'Not Found' });
+  }
+  // Serve index.html for SPA routing
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // Global error handler
