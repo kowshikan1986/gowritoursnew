@@ -5,7 +5,7 @@ FROM node:22-alpine
 WORKDIR /app
 
 # Set environment (NODE_ENV set after build for Vite compatibility)
-ENV PORT=3000
+ENV PORT=4000
 ENV HOST=0.0.0.0
 ENV NODE_OPTIONS=--max-old-space-size=512
 
@@ -31,11 +31,11 @@ RUN npm prune --production
 RUN mkdir -p /app/data /app/logs /app/public/uploads
 
 # Expose port
-EXPOSE 3000
+EXPOSE 4000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:4000/health || exit 1
 
 # Start the server
 CMD ["node", "server-json.js"]

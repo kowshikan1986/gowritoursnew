@@ -2608,11 +2608,11 @@ Message: ${otherServicesForm.message}
               <CategoryGrid>
                 {childCategories.map((sub, index) => {
                   const slug = sub.slug || sub.id || normalize(sub.name || '');
+                  const normalizedSlug = normalize(slug || '');
                   const isOtherServices = normalize(id) === 'other-services';
-                  const isSriLankaTours = normalize(id) === 'sri-lanka-tours';
                   const isCruises = normalize(id) === 'cruises';
                   const isPrivateTours = normalize(id) === 'private-tours';
-                  const linkTarget = (isOtherServices || isSriLankaTours) ? '/contact-us' : (isCruises ? '/service/cruises' : (isPrivateTours ? '/service/private-tours' : `/service/${slug}`));
+                  const linkTarget = isOtherServices ? '/contact-us' : (isCruises ? '/service/cruises' : (isPrivateTours ? '/service/private-tours' : `/service/${normalizedSlug}`));
                   const subImage = getImage(sub);
                   const location = sub.location || null;
                   
@@ -2645,7 +2645,7 @@ Message: ${otherServicesForm.message}
                         )}
                         <CategoryFooter>
                           <ViewDetailsButton>
-                            {(isOtherServices || isSriLankaTours || isPrivateTours) ? 'Enquire Now' : 'View Details'}
+                            {(isOtherServices || isPrivateTours) ? 'Enquire Now' : 'View Details'}
                             <ArrowRightIcon style={{ width: '16px', height: '16px' }} />
                           </ViewDetailsButton>
                         </CategoryFooter>

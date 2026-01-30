@@ -501,7 +501,7 @@ const ExploreButton = styled(Link)`
   }
 `;
 
-const ServiceCard = memo(({ service, index, forceServiceLink, isVehicleHire, parentCategoryId }) => {
+const ServiceCard = memo(({ service, index, forceServiceLink, isVehicleHire, parentCategoryId, isSriLankaTours }) => {
   const [currentPackageIndex, setCurrentPackageIndex] = useState(0);
   const hasPackages = service.packages && service.packages.length > 0;
   const [showSubs, setShowSubs] = useState(false);
@@ -533,18 +533,20 @@ const ServiceCard = memo(({ service, index, forceServiceLink, isVehicleHire, par
   }, [showExpanded]);
 
   const currentData = hasPackages ? service.packages[currentPackageIndex] : service;
+  const serviceSlug = normalize(service.id || service.slug || service.title || '');
   
   // Resolve link: if forceServiceLink is true, link to the subcategory service page
   // Private Tours should redirect to contact page (check both the service itself and its parent)
-  const isPrivateTours = normalize(service.id || service.slug || service.title || '') === 'private-tours' || normalize(parentCategoryId || '') === 'private-tours';
+  // Sri Lanka Tours should go to service page, not contact-us
+  const isPrivateTours = !isSriLankaTours && (serviceSlug === 'private-tours' || normalize(parentCategoryId || '') === 'private-tours');
   const linkTo = isPrivateTours 
     ? '/contact-us'
     : (forceServiceLink 
-      ? `/service/${service.id}`
+      ? `/service/${serviceSlug}`
       : (hasPackages && currentData.id 
         ? `/package/${currentData.id}` 
-        : `/service/${service.id}`));
-  const categorySlug = service.id || service.slug || normalize(service.title);
+        : `/service/${serviceSlug}`));
+  const categorySlug = serviceSlug;
 
   const handleTitleClick = (e) => {
     e.preventDefault();
@@ -614,7 +616,7 @@ const ServiceCard = memo(({ service, index, forceServiceLink, isVehicleHire, par
 
           <CardFooter>
             <ExploreButton to={linkTo} style={{ marginLeft: 'auto' }}>
-              Enquire Now
+              {isSriLankaTours ? 'View Details' : 'Enquire Now'}
               <ArrowRightIcon />
             </ExploreButton>
           </CardFooter>
@@ -1243,7 +1245,7 @@ const TourPackages = () => {
   const currentOtherL2Cards = selectedOtherCategory?.cards || [];
 
   // Reusable component for rendering a tabbed category section
-  const renderTabbedSection = (title, l1Categories, selectedL1Id, setSelectedL1Fn, l2Cards, keyPrefix, isVehicleHire = false) => {
+  const renderTabbedSection = (title, l1Categories, selectedL1Id, setSelectedL1Fn, l2Cards, keyPrefix, isVehicleHire = false, isSriLankaTours = false) => {
     if (l1Categories.length === 0) return null;
     
     return (
@@ -1281,6 +1283,7 @@ const TourPackages = () => {
               forceServiceLink={true}
               isVehicleHire={isVehicleHire}
               parentCategoryId={selectedL1Id}
+              isSriLankaTours={isSriLankaTours}
             />
           ))}
         </Grid>
@@ -1435,7 +1438,7 @@ const TourPackages = () => {
           </>)}
         
           {sriLankaL1Categories.length > 0 ? (
-            renderTabbedSection('Sri Lanka Tours', sriLankaL1Categories, selectedSriLankaL1, setSelectedSriLankaL1, currentSriLankaL2Cards, 'srilanka')
+            renderTabbedSection('Sri Lanka Tours', sriLankaL1Categories, selectedSriLankaL1, setSelectedSriLankaL1, currentSriLankaL2Cards, 'srilanka', false, true)
           ) : sriLankaServices.length > 0 && (
           <>
             <SectionHeader style={{ marginTop: '2rem', textAlign: 'left' }}>
@@ -1451,7 +1454,7 @@ const TourPackages = () => {
             </SectionHeader>
             <Grid>
               {sriLankaServices.map((service, index) => (
-                <ServiceCard key={`slt-${service.id}`} service={service} index={index} />
+                <ServiceCard key={`slt-${service.id}`} service={service} index={index} isSriLankaTours={true} />
               ))}
             </Grid>
           </>)}

@@ -1,0 +1,64 @@
+name: Deploy with Docker
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy-docker:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy Docker Container
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            echo "Starting Docker deployment..."
+            
+            # Navigate to project directory
+            cd /root/gowritoursjava || { echo "Directory not found, cloning repository..."; cd /root && git clone https://github.com/kowshikan1986/gowritoursnew.git gowritoursjava; cd gowritoursjava; }
+            
+            # Pull latest changes
+            echo "Pulling latest code..."
+            git fetch --all
+            git reset --hard origin/main || git reset --hard origin/master
+            
+            # Stop and remove existing container
+            echo "Stopping existing container..."
+            docker stop luxury-travel-agency || true
+            docker rm luxury-travel-agency || true
+            
+            # Remove old image
+            docker rmi luxury-travel-agency:latest || true
+            
+            # Build new image
+            echo "Building Docker image..."
+            docker build -t luxury-travel-agency:latest .
+            
+            # Run new container
+            echo "Starting new container..."
+            docker run -d \
+              --name luxury-travel-agency \
+              --restart unless-stopped \
+              -p 4000:4000 \
+              -v /root/gowritoursjava/data:/app/data \
+              -v /root/gowritoursjava/logs:/app/logs \
+              luxury-travel-agency:latest
+            
+            # Clean up unused images
+            docker image prune -f
+            
+            echo "Docker deployment completed successfully!"
+            
+            # Show container status
+            docker ps | grep luxury-travel-agency

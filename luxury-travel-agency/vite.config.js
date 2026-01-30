@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
     publicDir: 'public', // Copy public folder to dist on build
     server: {
       host: true,
-      port: 3000,
+      port: 4000,
       strictPort: true,
       proxy: {
         '/api': {
