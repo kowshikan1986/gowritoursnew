@@ -22,14 +22,19 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
+          command_timeout: 10m
           script: |
-            echo "Starting deployment..."
+            echo "🚀 Starting deployment..."
             
             # Navigate to project directory
-            cd /root/gowritoursjava || { echo "Directory not found, cloning repository..."; cd /root && git clone https://github.com/kowshikan1986/gowritoursnew.git gowritoursjava; cd gowritoursjava; }
+            cd /var/www/gowritours || cd /root/gowritoursjava || { 
+              echo "Directory not found, cloning repository..."
+              cd /var/www && git clone https://github.com/kowshikan1986/gowritoursnew.git gowritours
+              cd gowritours
+            }
             
             # Pull latest changes
-            echo "Pulling latest code..."
+            echo "📥 Pulling latest code..."
             git fetch --all
             git reset --hard origin/main || git reset --hard origin/master
             
@@ -37,22 +42,20 @@ jobs:
             cd luxury-travel-agency
             
             # Install dependencies
-            echo "Installing dependencies..."
+            echo "📦 Installing dependencies..."
             npm install --legacy-peer-deps
             
             # Build application
-            echo "Building application..."
+            echo "🔨 Building application..."
             npm run build
             
-            # Stop existing application
-            echo "Stopping existing application..."
-            pm2 stop luxury-travel-agency || true
-            
-            # Start application with PM2
-            echo "Starting application..."
-            pm2 start server-json.js --name luxury-travel-agency --max-memory-restart 512M
+            # Restart with PM2
+            echo "🔄 Restarting application..."
+            pm2 delete gowritours 2>/dev/null || true
+            pm2 start server-production.js --name gowritours --max-memory-restart 512M
             
             # Save PM2 configuration
             pm2 save
             
-            echo "Deployment completed successfully!"
+            echo "✅ Deployment completed successfully!"
+            pm2 status
